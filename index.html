@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=VT323&display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#000}
 @keyframes mm-draw{to{stroke-dashoffset:0}}
@@ -49,6 +49,10 @@ body{margin:0;background:#000}
 .mm-file[aria-pressed=true]{border-left-color:#fff;background-color:rgba(255,255,255,.08);color:#fff}
 .mm-file.mm-empty{color:rgba(255,255,255,.4)}
 .mm-file:focus-visible{outline:1px solid #fff;outline-offset:-3px}
+.mm-term{font-family:'VT323','Courier New',Courier,monospace;font-size:21px;line-height:1.25;letter-spacing:.02em;color:#fff;font-weight:400}
+.mm-term input,.mm-term textarea{flex:1 1 auto;min-width:0;font:inherit;letter-spacing:inherit;color:#fff;background:transparent;border:0;outline:0;padding:0;margin:0;caret-color:#fff;caret-shape:block;resize:none;border-radius:0}
+.mm-term button{font:inherit;letter-spacing:inherit;color:#fff;background:transparent;border:0;padding:0 2px;margin:0;min-height:32px;cursor:pointer;border-radius:0}
+.mm-term button:hover,.mm-term button:focus-visible{background:#fff;color:#000;outline:0}
 @media (max-width:640px){.mm-hide-sm{display:none}}
 @media (max-width:420px){.mm-node{min-width:0;padding:0 12px;gap:9px;letter-spacing:.2em}}
 @media (prefers-reduced-motion:reduce){.mm-stroke{animation:none;stroke-dashoffset:0}.mm-fade,.mm-type,.mm-node,.mm-panel,.mm-blink,.mm-run{animation:none}}
@@ -64,7 +68,7 @@ body{margin:0;background:#000}
 <div class="mm-fade" aria-hidden="true" style="position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1px solid rgba(255,255,255,.4);border-right:1px solid rgba(255,255,255,.4);pointer-events:none;animation-delay:2.4s"></div>
 <header style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,3vw,32px) clamp(20px,4vw,44px) 0;font-size:10px;letter-spacing:.22em;line-height:1.9;color:rgba(255,255,255,.55);text-transform:uppercase">
 <div class="mm-fade" style="animation-delay:2.6s">
-<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.3</span></div>
+<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.4</span></div>
 <div>Local <span data-mm="clock"></span></div>
 <div>Sol <span data-mm="sol"></span></div>
 <div>Luna <span data-mm="luna"></span></div>
@@ -124,7 +128,7 @@ body{margin:0;background:#000}
 <div id="mm-arch" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:6;background:#000">
 <canvas id="mm-arch-c" aria-hidden="true" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block"></canvas>
 <div style="position:absolute;top:clamp(18px,3vw,32px);left:clamp(20px,4vw,44px);font-size:10px;letter-spacing:.22em;line-height:1.9;color:rgba(255,255,255,.55);text-transform:uppercase;pointer-events:none">
-<div style="color:#fff">03 / Archive</div>
+<div style="color:#fff" data-mm="runTitle"></div>
 <div data-mm="archStat"></div>
 <div data-mm="archPos"></div>
 </div>
@@ -132,9 +136,18 @@ body{margin:0;background:#000}
 <div id="mm-arch-skip" style="position:absolute;left:0;right:0;bottom:clamp(20px,5vh,40px);text-align:center;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.45);text-transform:uppercase;pointer-events:none">Tap to skip</div>
 <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:84px 20px 28px;box-sizing:border-box;pointer-events:none">
 <div id="mm-arch-files" role="dialog" aria-label="Archive files" class="mm-corners" style="display:none;pointer-events:auto;width:100%;max-width:560px;max-height:100%;overflow:auto;box-sizing:border-box;padding:22px 22px 20px;border:1px solid rgba(255,255,255,.26);background-color:rgba(0,0,0,.84)">
-<div style="display:flex;justify-content:space-between;gap:12px;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.6);text-transform:uppercase"><span>Rack A-05-06</span><span data-mm="archCount"></span></div>
+<div style="display:flex;justify-content:space-between;gap:12px;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.6);text-transform:uppercase"><span data-mm="runPlace"></span><span data-mm="archCount"></span></div>
 <div id="mm-arch-list" style="margin-top:14px;border-bottom:1px solid rgba(255,255,255,.12)"></div>
 <div id="mm-arch-detail" aria-live="polite" style="margin-top:16px;min-height:74px;font-size:12px;line-height:1.75;color:rgba(255,255,255,.72)"></div>
+</div>
+<div id="mm-term" class="mm-term" role="dialog" aria-label="Contact terminal" style="display:none;pointer-events:auto;width:100%;max-width:720px;max-height:100%;overflow:auto;box-sizing:border-box;padding:18px 18px 16px;border:1px solid rgba(255,255,255,.3);background-color:rgba(0,0,0,.9)">
+<pre id="mm-term-head" style="margin:0;min-height:3.75em;font:inherit;white-space:pre-wrap;color:rgba(255,255,255,.72)"></pre>
+<form id="mm-term-form" style="margin:10px 0 0">
+<label style="display:flex;gap:.6ch"><span>FROM&gt;</span><input id="mm-term-from" type="text" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="120" aria-label="Your name or e-mail"></label>
+<label style="display:flex;gap:.6ch;margin-top:4px"><span>MSG&gt;</span><textarea id="mm-term-msg" rows="6" spellcheck="false" maxlength="4000" aria-label="Your message"></textarea></label>
+<div style="display:flex;gap:2ch;margin-top:10px"><button type="submit">[ TRANSMIT ]</button><button type="button" id="mm-term-clr">[ CLEAR ]</button></div>
+</form>
+<div id="mm-term-out" aria-live="polite" style="margin-top:8px;min-height:1.25em;white-space:pre-wrap"></div>
 </div>
 </div>
 </div>
@@ -689,21 +702,26 @@ body{margin:0;background:#000}
   root.addEventListener('pointermove', function (e) { engine.pointer(e.clientX, e.clientY, e.buttons); });
   root.addEventListener('pointerleave', function () { engine.pointer(null); });
 
-  /* ---------- 03 / ARCHIVE: a run through the data hall, then the file slots of one rack ---------- */
+  /* ---------- sectors you fly into: 01 DESIGN (gallery hall) and 03 ARCHIVE (data hall) ---------- */
+  /* To hang a design, add a line here, e.g.
+     { name: 'Poster 01', type: 'Poster', date: '10/11/2026', img: 'design/poster-01.jpg', href: 'design/poster-01.jpg', note: 'One line about it.' } */
+  var DESIGN = [];
   /* To store a file, add a line here, e.g.
      { name: 'Portfolio 2026', type: 'PDF', date: '10/11/2026', size: '2.4 MB', href: 'files/portfolio-2026.pdf', note: 'One line about the file.' } */
   var ARCHIVE = [];
-  var ARCHIVE_SLOTS = 6;
+  /* Where Contact messages go. endpoint = a form service address that accepts a JSON POST; mailto = an e-mail address (opens the visitor's mail program). Both empty = channel offline. */
+  var CONTACT = { endpoint: '', mailto: '' };
   var arch = (function () {
     var el = document.getElementById('mm-arch'), cv = document.getElementById('mm-arch-c'), c = cv.getContext && cv.getContext('2d');
     var box = document.getElementById('mm-arch-files'), list = document.getElementById('mm-arch-list'), detail = document.getElementById('mm-arch-detail'), skip = document.getElementById('mm-arch-skip');
-    var W = 1, H = 1, DPR = 1, f = 500, cx = 0, cy = 0, raf = 0, on = false, t = 0, last = 0, docked = false, dimK = 0, fr = 0, from = null;
-    var T = 6.4, TURN = 1.4, NEAR = 0.12, FOG = 105, RH = 2.2, Z0 = -20, SEG = 13.6, SLEN = 11.2, NSEG = 8, Z1 = Z0 + (NSEG - 1) * SEG + SLEN, ZS = -34, ZE = Z0 + 4 * SEG + 5.5 * 0.7;
-    var cam = { x: 0, y: 9, z: ZS }, sy = 0, cyw = 1, sp = 0, cp = 1, A = [0, 0, 0], B = [0, 0, 0];
+    var W = 1, H = 1, DPR = 1, f = 500, cx = 0, cy = 0, raf = 0, on = false, t = 0, last = 0, docked = false, dimK = 0, fr = 0, from = null, S = null, lock = 0;
+    var NEAR = 0.12, FOG = 105, cam = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 }, sy = 0, cyw = 1, sp = 0, cp = 1, A = [0, 0, 0], B = [0, 0, 0];
     var NBA = 10, bz = []; for (var i0 = 0; i0 < NBA; i0++) bz.push([]);
     var still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     function wa(a) { return 'rgba(255,255,255,' + (a < 0 ? 0 : a > 1 ? 1 : a).toFixed(3) + ')'; }
     function hsh(n) { n = Math.sin(n * 127.1) * 43758.5453; return n - Math.floor(n); }
+    function ez(q) { q = q < 0 ? 0 : q > 1 ? 1 : q; return q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2; }
+    function sm(q) { q = q < 0 ? 0 : q > 1 ? 1 : q; return q * q * (3 - 2 * q); }
     function tf(x, y, z, o) { var dx = x - cam.x, dy = y - cam.y, dz = z - cam.z, X = dx * cyw - dz * sy, Z = dx * sy + dz * cyw; o[0] = X; o[1] = dy * cp - Z * sp; o[2] = dy * sp + Z * cp; }
     function L(x1, y1, z1, x2, y2, z2, a) {
       tf(x1, y1, z1, A); tf(x2, y2, z2, B);
@@ -718,6 +736,9 @@ body{margin:0;background:#000}
       bz[Math.min(NBA - 1, (a * NBA) | 0)].push(ax, ay, bx, by);
     }
     function LZ(x, y, za, zb, a, step) { for (var z = za; z < zb - 0.001; z += step) L(x, y, z, x, y, Math.min(zb, z + step), a); }
+    function RX(x, y0, y1, z0, z1, a) { L(x, y0, z0, x, y1, z0, a); L(x, y0, z1, x, y1, z1, a); L(x, y0, z0, x, y0, z1, a); L(x, y1, z0, x, y1, z1, a); }
+    function RZ(z, x0, x1, y0, y1, a) { L(x0, y0, z, x0, y1, z, a); L(x1, y0, z, x1, y1, z, a); L(x0, y0, z, x1, y0, z, a); L(x0, y1, z, x1, y1, z, a); }
+    function BOX(x0, x1, y1, z0, z1, a) { RZ(z0, x0, x1, 0, y1, a); RZ(z1, x0, x1, 0, y1, a); L(x0, 0, z0, x0, 0, z1, a); L(x1, 0, z0, x1, 0, z1, a); L(x0, y1, z0, x0, y1, z1, a); L(x1, y1, z0, x1, y1, z1, a); }
     function flush(g) {
       for (var b = 0, i, arr, a; b < NBA; b++) {
         arr = bz[b]; if (!arr.length) continue;
@@ -732,15 +753,19 @@ body{margin:0;background:#000}
       var s = Math.max(1, Math.min(4, (f * 0.02) / A[2]));
       c.fillStyle = wa(a * fg * g); c.fillRect(cx + f * A[0] / A[2] - s / 2, cy - f * A[1] / A[2] - s / 2, s, s);
     }
-    function scene(time, g) {
+
+    /* ----- 03: data hall ----- */
+    var RH = 2.2, Z0 = -20, SEG = 13.6, SLEN = 11.2, NSEG = 8, Z1 = Z0 + (NSEG - 1) * SEG + SLEN, ZS = -34, ZE = Z0 + 4 * SEG + 5.5 * 0.7;
+    function hallCam(S, q, tt) {
+      var e = ez(tt / 2.7);
+      cam.z = ZS + (ZE - ZS) * S; cam.y = 9 + (1.6 - 9) * e - 0.4 * q; cam.x = -q; cam.pitch = -0.36 * (1 - e); cam.yaw = (q * Math.PI) / 2;
+    }
+    function hallScene(time, g) {
       var s, k, i, j, x0, x1, za, zb, z, d, y, near = cam.y < 6;
-      /* roof trusses */
       for (z = Z0; z <= Z1 + 1; z += 8.2) L(-24, 10.5, z, 24, 10.5, z, 0.5);
       for (x0 = -24; x0 <= 24; x0 += 12) LZ(x0, 10.5, Z0, Z1, 0.4, 10);
-      /* hall edge and aisle floor tiles */
       L(-24, 0, Z0 - 3, 24, 0, Z0 - 3, 0.5); L(-24, 0, Z1 + 3, 24, 0, Z1 + 3, 0.5); LZ(-24, 0, Z0 - 3, Z1 + 3, 0.4, 9); LZ(24, 0, Z0 - 3, Z1 + 3, 0.4, 9);
       if (near) for (z = Math.max(Z0, Math.floor((cam.z - 3) / 0.6) * 0.6), i = 0; i < 46 && z < Z1; i++, z += 0.6) L(-1.2, 0, z, 1.2, 0, z, 0.32);
-      /* rows of racks */
       for (s = -1; s <= 1; s += 2) for (k = 0; k < 7; k++) {
         x0 = s * (1.2 + k * 3.4); x1 = x0 + s;
         for (i = 0; i < NSEG; i++) {
@@ -756,40 +781,143 @@ body{margin:0;background:#000}
           } else if (k > 0 && d < 34) for (j = 4; j < 16; j += 4) L(x0, 0, za + j * 0.7, x0, RH, za + j * 0.7, 0.5);
         }
       }
-      /* cable ladders above the rack fronts */
       for (s = -1; s <= 1; s += 2) { LZ(s * 0.85, 2.75, Z0, Z1, 0.6, 3); LZ(s * 1.35, 2.75, Z0, Z1, 0.6, 3); }
       if (near) for (z = Math.max(Z0, Math.floor(cam.z - 4)), i = 0; i < 30 && z < Z1; i++, z += 1) { L(0.85, 2.75, z, 1.35, 2.75, z, 0.45); L(-0.85, 2.75, z, -1.35, 2.75, z, 0.45); }
-      /* the target rack */
-      var lock = Math.min(1, Math.max(0, (t - (T - 1.6)) / 1.2));
       if (lock > 0) {
-        za = ZE - 0.35; zb = ZE + 0.35; k = 1.5 * lock * (0.75 + 0.25 * Math.sin(time * 5));
-        L(1.2, 0, za, 1.2, RH, za, k); L(1.2, 0, zb, 1.2, RH, zb, k); L(1.2, 0, za, 1.2, 0, zb, k); L(1.2, RH, za, 1.2, RH, zb, k);
-        for (j = 1; j <= ARCHIVE_SLOTS; j++) L(1.2, (RH * j) / (ARCHIVE_SLOTS + 1), za, 1.2, (RH * j) / (ARCHIVE_SLOTS + 1), zb, k * 0.6);
+        k = 1.5 * lock * (0.75 + 0.25 * Math.sin(time * 5));
+        RX(1.2, 0, RH, ZE - 0.35, ZE + 0.35, k);
+        for (j = 1; j <= 6; j++) L(1.2, (RH * j) / 7, ZE - 0.35, 1.2, (RH * j) / 7, ZE + 0.35, k * 0.6);
       }
       flush(g);
-      /* status lights */
       if (near) for (s = -1; s <= 1; s += 2) for (i = 0; i < NSEG; i++) for (j = 0; j < 16; j++) {
         z = Z0 + i * SEG + j * 0.7 + 0.35; if (Math.abs(z - cam.z) > 15) continue;
         for (k = 0; k < 3; k++) { d = i * 16 + j + k * 31 + (s > 0 ? 500 : 0); if (hsh(d + Math.floor(time * 1.6 + hsh(d) * 9)) > 0.42) dot(s * 1.2, 0.35 + hsh(d * 3.1) * 1.6, z - 0.2 + hsh(d * 1.7) * 0.4, 0.9, g); }
       }
     }
+
+    /* ----- 01: gallery hall, 16 m wide, 7 m high, frames on both walls and on three partition walls ----- */
+    var GA = -10, GB = 92, GH = 7, GS = -6, GE = 6 + 16 * 4.6, PART = [20, 44, 68], dockD = 4;
+    function gx(z) { return 5.2 * Math.sin((Math.PI * (z - 8)) / 24) * sm((z + 6) / 14) * sm((GE - z) / 12); }
+    function galCam(S, q, tt) {
+      var e = ez(tt / 2.2);
+      cam.z = GS + (GE - GS) * S; cam.x = gx(cam.z) + (8 - dockD) * q; cam.y = 3.2 + (1.7 - 3.2) * e + 0.5 * q; cam.pitch = -0.12 * (1 - e);
+      cam.yaw = Math.atan((gx(cam.z + 0.1) - gx(cam.z - 0.1)) / 0.2) * 0.85 * (1 - q) + (q * Math.PI) / 2;
+    }
+    function galScene(time, g) {
+      var s, i, z, id, w, h, yc, d, x, k;
+      for (s = -1; s <= 1; s += 2) {
+        LZ(s * 8, 0, GA, GB, 0.8, 4); LZ(s * 8, GH, GA, GB, 0.7, 4); LZ(s * 3, GH, GA, GB, 0.4, 4); LZ(s * 4, 0, GA, GB, 0.16, 4);
+        for (z = 3.7; z < GB; z += 9.2) L(s * 8, 0, z, s * 8, GH, z, 0.45);
+        for (i = 0; i < 18; i++) {
+          z = 6 + i * 4.6; id = i + (s > 0 ? 40 : 0); d = Math.abs(z - cam.z);
+          w = 1.2 + hsh(id) * 1.8; h = 1 + hsh(id * 2.3) * 1.5; yc = 2.3;
+          if (s > 0 && i === 16) { w = 3; h = 2; yc = 2.2; }
+          x = s * 7.97;
+          RX(x, yc - h / 2, yc + h / 2, z - w / 2, z + w / 2, 1);
+          if (d < 42) { RX(x, yc - h / 2 + 0.14, yc + h / 2 - 0.14, z - w / 2 + 0.14, z + w / 2 - 0.14, 0.5); L(x, yc - h / 2 - 0.35, z - 0.2, x, yc - h / 2 - 0.35, z + 0.2, 0.45); }
+        }
+        for (i = 0; i < 4; i++) { z = 12 + i * 24; BOX(s * 6.9, s * 6.1, 1.1, z - 0.4, z + 0.4, 0.7); }
+      }
+      RZ(GA, -8, 8, 0, GH, 0.7); RZ(GB, -8, 8, 0, GH, 0.7);
+      RZ(GB - 0.03, -2.6, 2.6, 1.1, 4.3, 1); RZ(GB - 0.03, -2.44, 2.44, 1.26, 4.14, 0.5); RZ(GB - 0.03, -6.4, -4.2, 1.4, 3.4, 0.9); RZ(GB - 0.03, 4.2, 6.4, 1.4, 3.4, 0.9);
+      for (z = GA; z <= GB; z += 4.6) L(-8, GH, z, 8, GH, z, 0.45);
+      for (z = Math.max(GA, Math.floor((cam.z - 4) / 2.3) * 2.3), i = 0; i < 20 && z < GB; i++, z += 2.3) L(-8, 0, z, 8, 0, z, 0.2);
+      for (i = 0; i < PART.length; i++) {
+        z = PART[i]; BOX(-3, 3, 3.6, z - 0.15, z + 0.15, 0.9);
+        for (k = -1; k <= 1; k += 2) { RZ(z - 0.17, k * 1.5 - 0.8, k * 1.5 + 0.8, 1, 3, 1); RZ(z - 0.17, k * 1.5 - 0.66, k * 1.5 + 0.66, 1.14, 2.86, 0.5); RZ(z + 0.17, k * 1.5 - 0.6, k * 1.5 + 0.6, 1.3, 2.8, 0.9); }
+      }
+      if (lock > 0) {
+        k = 1.5 * lock * (0.75 + 0.25 * Math.sin(time * 5));
+        RX(7.96, 1.2, 3.2, GE - 1.5, GE + 1.5, k); RX(7.96, 1.06, 3.34, GE - 1.64, GE + 1.64, k * 0.6);
+      }
+      flush(g);
+    }
+
+    /* ----- 04: a burst of characters that settles into a terminal grid, is wiped, and leaves the prompt ----- */
+    var GL = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~░▒▓█▄▀■□▪◊○╬╫╪╩╦╠═╔╗╚╝│┤┐└┴┬├─┼ΔΣΩΨλπ¤§¶†‡¿¡«»±÷×≈≠≡∞∫√∂∑∏¬µ';
+    var atlas = null, AC = 40, PT = null, PN = 0, bW = 0, bH = 0, gcols = 1, grows = 1, gcw = 1, gch = 1, bLast = 0, bV = 0;
+    function burstAtlas() {
+      var a = document.createElement('canvas'), g, i;
+      a.width = 16 * AC; a.height = Math.ceil(GL.length / 16) * AC; g = a.getContext('2d');
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = Math.round(AC * 0.86) + "px 'VT323','Courier New',monospace";
+      for (i = 0; i < GL.length; i++) g.fillText(GL.charAt(i), ((i % 16) + 0.5) * AC, (Math.floor(i / 16) + 0.52) * AC);
+      atlas = a;
+    }
+    function burstInit() {
+      bW = W; bH = H; if (!atlas) burstAtlas();
+      PN = Math.round(Math.min(5600, Math.max(2400, (W * H) / 185)));
+      gcw = Math.sqrt((W * H) / PN / 1.7); gch = gcw * 1.7; gcols = Math.ceil(W / gcw); grows = Math.ceil(H / gch);
+      PT = new Float32Array(PN * 4);
+      for (var i = 0; i < PN; i++) { PT[i * 4] = (Math.random() * 2 - 1) * 1.7; PT[i * 4 + 1] = (Math.random() * 2 - 1) * 1.7; PT[i * 4 + 2] = 0.03 + Math.random() * 0.97; PT[i * 4 + 3] = Math.floor(Math.random() * GL.length); }
+    }
+    function burstScene(time, g) {
+      if (!PT || bW !== W || bH !== H) burstInit();
+      var dt = time > bLast ? Math.min(0.05, time - bLast) : 0.016; bLast = time;
+      var end = S.T + S.TURN, u = Math.min(1, time / S.T), out = 1 - Math.pow(1 - Math.min(1, time / 0.9), 3);
+      var k = time < end ? ez((time - (S.T - 1.3)) / 1.3) : 0, wipe = time < end ? sm((time - S.T) / S.TURN) * 1.08 : 0, late = time >= end ? Math.min(1, (time - end) / 1.5) : 1;
+      bV = time < end ? 0.05 + 1.5 * Math.pow(Math.sin(Math.PI * u), 1.3) : 0.03;
+      var m = Math.max(cx, cy) * 0.5, gs = gch * 0.86, i, o, z, pr, X, Y, sz, al, gi, row;
+      for (i = 0; i < PN; i++) {
+        o = i * 4; z = PT[o + 2] - bV * dt * 0.6;
+        if (z < 0.03) { z += 0.97; PT[o] = (Math.random() * 2 - 1) * 1.7; PT[o + 1] = (Math.random() * 2 - 1) * 1.7; PT[o + 3] = Math.floor(Math.random() * GL.length); }
+        PT[o + 2] = z; pr = 1 / z;
+        X = cx + PT[o] * out * pr * m; Y = cy + PT[o + 1] * out * pr * m; sz = Math.min(84, 7 * pr); al = (0.22 + 0.78 * Math.pow(1 - z, 1.2)) * Math.min(1, (1 - z) * 12) * late;
+        if (k > 0) {
+          row = Math.floor(i / gcols); if (row / grows < wipe) continue;
+          X += ((i % gcols + 0.5) * gcw - X) * k; Y += ((row + 0.5) * gch - Y) * k; sz += (gs - sz) * k; al += (0.62 - al) * k;
+          if (k > 0.9 && Math.random() < 0.03) PT[o + 3] = Math.floor(Math.random() * GL.length);
+        }
+        if (X < -sz || X > W + sz || Y < -sz || Y > H + sz || al < 0.02) continue;
+        gi = PT[o + 3]; c.globalAlpha = Math.min(1, al * g);
+        c.drawImage(atlas, (gi % 16) * AC, Math.floor(gi / 16) * AC, AC, AC, X - sz / 2, Y - sz / 2, sz, sz);
+      }
+      c.globalAlpha = 1;
+      if (wipe > 0 && wipe < 1.08) { c.fillStyle = wa(0.9 * g); c.fillRect(0, Math.min(H, wipe * grows * gch), W, 1); }
+    }
+    var term = document.getElementById('mm-term'), thead = document.getElementById('mm-term-head'), tfrom = document.getElementById('mm-term-from'), tmsg = document.getElementById('mm-term-msg'), tout = document.getElementById('mm-term-out'), typer = 0;
+    function termOpen() {
+      var txt = 'MM-SYS TERMINAL 0.4 / CHANNEL 04\nUPLINK: ' + (CONTACT.endpoint || CONTACT.mailto ? 'READY' : 'OFFLINE - THIS CHANNEL IS NOT OPEN YET') + '\nWRITE YOUR MESSAGE BELOW.', i = 0;
+      term.style.display = 'block'; tout.textContent = ''; thead.textContent = ''; clearInterval(typer);
+      typer = setInterval(function () { i += 2; thead.textContent = txt.slice(0, i); if (i >= txt.length) clearInterval(typer); }, 16);
+      tfrom.focus();
+    }
+    document.getElementById('mm-term-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var m = tmsg.value.trim(), fr = tfrom.value.trim();
+      if (!m) { tout.textContent = 'ERR: EMPTY MESSAGE.'; return; }
+      if (CONTACT.endpoint) {
+        tout.textContent = 'TRANSMITTING...';
+        fetch(CONTACT.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ from: fr, message: m }) })
+          .then(function (r) { tout.textContent = r.ok ? 'MESSAGE TRANSMITTED. END OF LINE.' : 'ERR: TRANSMISSION FAILED (' + r.status + '). MESSAGE NOT SENT.'; if (r.ok) tmsg.value = ''; })
+          .catch(function () { tout.textContent = 'ERR: NO CARRIER. MESSAGE NOT SENT.'; });
+      } else if (CONTACT.mailto) {
+        tout.textContent = 'HANDED TO YOUR MAIL PROGRAM. PRESS SEND THERE TO TRANSMIT.';
+        location.href = 'mailto:' + CONTACT.mailto + '?subject=' + encodeURIComponent('Message via michaelmeus.com' + (fr ? ' - ' + fr : '')) + '&body=' + encodeURIComponent(m + (fr ? '\n\nFrom: ' + fr : ''));
+      } else tout.textContent = 'NO UPLINK. MESSAGE NOT SENT - THIS CHANNEL IS NOT OPEN YET.';
+    });
+    document.getElementById('mm-term-clr').addEventListener('click', function () { tmsg.value = ''; tout.textContent = ''; tmsg.focus(); });
+
+    var SECT = {
+      '01': { title: '01 / Design', place: 'Frame G-17', moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
+      '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 5.6, TURN: 1.5, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
+      '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
+    };
     function frame(now) {
       if (!on) return;
       raf = requestAnimationFrame(frame);
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
       if (docked && (fr++ % 3)) return;
-      var u = Math.min(1, t / T), S = u * u * u * (u * (u * 6 - 15) + 10), e = Math.min(1, t / 2.7), q = Math.min(1, Math.max(0, (t - T) / TURN));
-      e = e < 0.5 ? 4 * e * e * e : 1 - Math.pow(-2 * e + 2, 3) / 2; q = q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2;
-      cam.z = ZS + (ZE - ZS) * S; cam.y = 9 + (1.6 - 9) * e - 0.4 * q; cam.x = -q;
-      var pitch = -0.36 * (1 - e), yaw = (q * Math.PI) / 2;
-      sy = Math.sin(yaw); cyw = Math.cos(yaw); sp = Math.sin(pitch); cp = Math.cos(pitch);
-      if (!docked && t >= T + TURN) dock();
+      var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
+      S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
+      sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
+      lock = Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
+      if (!docked && t >= S.T + S.TURN) dock();
       dimK += ((docked ? 1 : 0) - dimK) * Math.min(1, dt * (docked ? 12 : 3));
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
-      scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
+      S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
       if (!docked) {
-        set('archStat', u < 1 ? 'Traversing hall A' : 'Rack located');
-        set('archPos', 'Z ' + (cam.z < 0 ? '−' : '+') + Math.abs(cam.z).toFixed(1) + ' M · ' + ((30 * u * u * (1 - u) * (1 - u) * (ZE - ZS)) / T).toFixed(1) + ' M/S');
+        set('archStat', u < 1 ? S.moving : S.found);
+        set('archPos', S.pos ? S.pos() : 'Z ' + (cam.z < 0 ? '−' : '+') + Math.abs(cam.z).toFixed(1) + ' M · ' + ((30 * u * u * (1 - u) * (1 - u) * S.dist) / S.T).toFixed(1) + ' M/S');
       }
     }
     function pick(b, item, n) {
@@ -797,46 +925,54 @@ body{margin:0;background:#000}
       detail.textContent = '';
       var h = document.createElement('div'), m = document.createElement('div');
       h.style.cssText = 'color:#fff;font-size:13px;letter-spacing:.2em;text-transform:uppercase';
-      h.textContent = item ? item.name : 'Slot ' + p2(n) + ' — empty';
-      m.textContent = item ? [item.type, item.date, item.size].filter(Boolean).join(' · ') + (item.note ? ' — ' + item.note : '') : 'Nothing is stored in this slot yet.';
+      h.textContent = item ? item.name : S.one + ' ' + p2(n) + ' — empty';
+      m.textContent = item ? [item.type, item.date, item.size].filter(Boolean).join(' · ') + (item.note ? ' — ' + item.note : '') : S.none;
       detail.appendChild(h); detail.appendChild(m);
+      if (item && item.img) {
+        var im = document.createElement('img'); im.src = item.img; im.alt = item.name;
+        im.style.cssText = 'display:block;max-width:100%;max-height:42vh;margin-top:12px;border:1px solid rgba(255,255,255,.26)'; detail.appendChild(im);
+      }
       if (item && item.href) {
-        var a = document.createElement('a'); a.className = 'mm-btn'; a.href = item.href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '[ Open file ]';
+        var a = document.createElement('a'); a.className = 'mm-btn'; a.href = item.href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '[ Open ]';
         a.style.cssText = 'margin-top:12px;text-decoration:none'; detail.appendChild(a);
       }
     }
     function build() {
-      list.textContent = ''; detail.textContent = 'Select a slot.';
-      var n = Math.max(ARCHIVE_SLOTS, ARCHIVE.length), i;
+      list.textContent = ''; detail.textContent = S.hint;
+      var n = Math.max(6, S.items.length), i;
       for (i = 0; i < n; i++) (function (i) {
-        var it = ARCHIVE[i] || null, b = document.createElement('button'), a = document.createElement('span'), m = document.createElement('span'), r = document.createElement('span');
+        var it = S.items[i] || null, b = document.createElement('button'), a = document.createElement('span'), m = document.createElement('span'), r = document.createElement('span');
         b.type = 'button'; b.className = 'mm-file' + (it ? '' : ' mm-empty'); b.setAttribute('aria-pressed', 'false');
         a.textContent = p2(i + 1); a.style.cssText = 'flex:none;color:rgba(255,255,255,.5);letter-spacing:.1em';
-        m.textContent = it ? it.name : 'Empty slot'; m.style.cssText = 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        m.textContent = it ? it.name : S.empty; m.style.cssText = 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
         r.textContent = it ? (it.type || '') : '—'; r.style.cssText = 'flex:none;font-size:10px;color:rgba(255,255,255,.5)';
         b.appendChild(a); b.appendChild(m); b.appendChild(r);
         b.addEventListener('click', function () { pick(b, it, i + 1); });
         list.appendChild(b);
       })(i);
-      set('archCount', ARCHIVE.length + ' / ' + n + ' slots in use');
+      set('archCount', S.items.length + ' / ' + n + ' ' + S.count);
     }
     function dock() {
-      docked = true; t = Math.max(t, T + TURN); skip.style.display = 'none';
-      set('archStat', 'Docked'); set('archPos', 'Rack A-05-06');
+      docked = true; t = Math.max(t, S.T + S.TURN); skip.style.display = 'none';
+      set('archStat', 'Docked'); set('archPos', S.place);
+      if (S.term) { termOpen(); return; }
       build(); box.style.display = 'block'; box.classList.add('mm-panel');
       var b = list.querySelector('button'); if (b) b.focus();
     }
     function size() {
       var r = cv.getBoundingClientRect(); if (r.width < 2) return;
       W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 2);
-      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cx = W / 2; cy = H / 2; f = 0.55 * Math.max(W, H);
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cx = W / 2; cy = H / 2; f = 0.55 * Math.max(W, H); dockD = (f * 3) / Math.min(W - 24, 640);
     }
     function open(b) {
-      if (!c || on) return;
-      from = b; on = true; docked = false; dimK = 0; t = still ? T + TURN : 0; last = 0; fr = 0;
-      box.style.display = 'none'; skip.style.display = still ? 'none' : 'block';
+      var sc = SECT[b.getAttribute('data-idx')];
+      if (!c || on || !sc) return;
+      S = sc; from = b; on = true; docked = false; dimK = 0; t = still ? S.T + S.TURN : 0; last = 0; fr = 0;
+      set('runTitle', S.title); set('runPlace', S.place); set('archStat', ''); set('archPos', ''); box.setAttribute('aria-label', S.label);
+      box.style.display = 'none'; term.style.display = 'none'; bLast = 0; skip.style.display = still ? 'none' : 'block';
       el.style.display = 'block'; el.style.animation = 'mm-fade .45s ease both';
       engine.setPaused(true); size(); raf = requestAnimationFrame(frame);
+      if (S.term && document.fonts && document.fonts.load) document.fonts.load("30px 'VT323'").then(function () { atlas = null; burstAtlas(); }, function () {});
       document.getElementById('mm-arch-x').focus();
     }
     function close() {
@@ -844,13 +980,13 @@ body{margin:0;background:#000}
       on = false; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
       if (from) from.focus();
     }
-    cv.addEventListener('pointerdown', function () { if (on && !docked && t > 0.3) t = T + TURN; });
+    cv.addEventListener('pointerdown', function () { if (on && !docked && t > 0.3) t = S.T + S.TURN; });
     document.getElementById('mm-arch-x').addEventListener('click', close);
     window.addEventListener('resize', function () { if (on) size(); });
-    return { open: open, close: close, ok: !!c };
+    return { open: open, close: close, has: function (idx) { return !!c && !!SECT[idx]; } };
   })();
   function open(b) {
-    if (b.getAttribute('data-idx') === '03' && arch.ok) { arch.open(b); return; }
+    if (arch.has(b.getAttribute('data-idx'))) { arch.open(b); return; }
     lastBtn = b;
     var l = b.querySelector('.mm-label'), title = l ? l.textContent : 'Sector';
     set('panelIdx', b.getAttribute('data-idx') || ''); set('panelTitle', title); dialog.setAttribute('aria-label', title);
