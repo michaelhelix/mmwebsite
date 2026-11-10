@@ -60,6 +60,9 @@ body{margin:0;background:#000}
 <div class="mm-fade" style="animation-delay:2.6s">
 <div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.2</span></div>
 <div>Local <span data-mm="clock"></span></div>
+<div>Sol <span data-mm="sol"></span></div>
+<div>Luna <span data-mm="luna"></span></div>
+<div class="mm-hide-sm">JD <span data-mm="jd"></span></div>
 </div>
 <div class="mm-fade" style="animation-delay:2.8s;text-align:right">
 <div>Form <span data-mm="formNo"></span>/05</div>
@@ -94,7 +97,7 @@ body{margin:0;background:#000}
 <button type="button" class="mm-node mm-corners" data-idx="04" style="animation-delay:4.58s"><svg class="mm-glyph" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><polygon points="8,2 13.2,5 13.2,11 8,14 2.8,11 2.8,5" style="fill:none;stroke:currentColor;stroke-width:1"></polygon></svg><span class="mm-label">Contact</span><span style="margin-left:auto;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.5)">04</span></button>
 </nav>
 <footer style="position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 24px;padding:clamp(20px,3.5vh,34px) clamp(20px,4vw,44px) clamp(18px,3vw,30px);font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.55);text-transform:uppercase">
-<div class="mm-fade" style="display:flex;align-items:center;gap:10px;animation-delay:3.0s"><span class="mm-blink" aria-hidden="true" style="display:inline-block;width:6px;height:6px;background:#fff"></span><span>System online</span><span class="mm-hide-sm">// destination undefined</span></div>
+<div class="mm-fade" style="display:flex;align-items:center;gap:10px;animation-delay:3.0s"><span class="mm-blink" aria-hidden="true" style="display:inline-block;width:6px;height:6px;background:#fff"></span><span>System online</span><span class="mm-hide-sm">// tracking 7 bodies</span></div>
 <div class="mm-fade" style="animation-delay:3.1s">© 2026 Michael Meus</div>
 </footer>
 <div id="mm-panel" style="display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.55)">
@@ -119,7 +122,7 @@ body{margin:0;background:#000}
   opts = opts || {};
   var ctx = canvas.getContext('2d');
   var noop = function () {};
-  if (!ctx) return { setHover: noop, setDim: noop, pointer: noop, setOptions: noop, stop: noop };
+  if (!ctx) return { setBodies: noop, setHover: noop, setDim: noop, pointer: noop, setOptions: noop, stop: noop };
 
   var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var PHI = (1 + Math.sqrt(5)) / 2, TAU = Math.PI * 2;
@@ -134,7 +137,7 @@ body{margin:0;background:#000}
   var lock = typeof opts.lock === 'number' ? opts.lock : -1;
   var px = 0, py = 0, tx = 0, ty = 0, lastPX = null, spinVel = 0, rotY = 0.6, rotX = 0.4;
   var cur = lock >= 0 ? lock : 0, formT = 0, trans = null;
-  var track = { i: 0, t: 0 }, ro = null;
+  var track = { i: 0, t: 0 }, ro = null, bodies = null;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function ease(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
@@ -360,6 +363,27 @@ body{margin:0;background:#000}
       ctx.font = '9px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(0.34 * a);
       for (i = 0; i < 12; i++) { ang = off + (i * TAU) / 12; ctx.fillText(pad(i * 30, 3), cx + Math.cos(ang) * (RR + 22), cy + Math.sin(ang) * (RR + 22)); }
     }
+    if (bodies) { /* real positions on the ring: 000 = the March equinox point, degrees = ecliptic longitude */
+      var bd, X, Y, lr;
+      ctx.font = '9px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (i = 0; i < bodies.length; i++) {
+        bd = bodies[i]; ang = off + (bd.lon * TAU) / 360; c = Math.cos(ang); s = Math.sin(ang);
+        X = cx + c * RR; Y = cy + s * RR; lr = RR - 21 - bd.lift * 15;
+        ctx.strokeStyle = rgba((bd.kind < 2 ? 0.5 : 0.3) * a); ctx.beginPath();
+        ctx.moveTo(cx + c * (RR - 6), cy + s * (RR - 6)); ctx.lineTo(cx + c * (lr + 7), cy + s * (lr + 7)); ctx.stroke();
+        ctx.fillStyle = '#000'; ctx.strokeStyle = rgba(0.95 * a);
+        if (bd.kind === 0) {
+          ctx.beginPath(); ctx.moveTo(X, Y - 5); ctx.lineTo(X + 5, Y); ctx.lineTo(X, Y + 5); ctx.lineTo(X - 5, Y); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = rgba(0.95 * a); ctx.fillRect(X - 1, Y - 1, 2, 2);
+        } else if (bd.kind === 1) {
+          ctx.beginPath(); ctx.arc(X, Y, 3.5, 0, TAU); ctx.fill(); ctx.stroke();
+        } else {
+          ctx.fillRect(X - 3.5, Y - 3.5, 7, 7); ctx.fillStyle = rgba(0.8 * a); ctx.fillRect(X - 1.5, Y - 1.5, 3, 3);
+        }
+        ctx.fillStyle = rgba((bd.kind < 2 ? 0.75 : 0.45) * a);
+        ctx.fillText(bd.tag, cx + c * lr, cy + s * lr);
+      }
+    }
     var sw = t * 0.32;
     ctx.strokeStyle = rgba(0.6 * a); ctx.beginPath(); ctx.arc(cx, cy, RR, sw, sw + 0.42); ctx.stroke();
     c = Math.cos(sw + 0.42); s = Math.sin(sw + 0.42);
@@ -521,6 +545,11 @@ body{margin:0;background:#000}
       ty = clamp(((y - r.top) / r.height) * 2 - 1, -1, 1);
       if (buttons & 1) { if (lastPX != null) spinVel += (x - lastPX) * 0.012; lastPX = x; } else lastPX = null;
     },
+    setBodies: function (list) {
+      list = list.slice().sort(function (u, v) { return u.lon - v.lon; });
+      for (var i = 0; i < list.length; i++) list[i].lift = i && list[i].lon - list[i - 1].lon < 11 && !list[i - 1].lift ? 1 : 0;
+      bodies = list;
+    },
     setOptions: function (o) {
       if (typeof o.speed === 'number') userSpeed = o.speed;
       if (typeof o.lock === 'number') { lock = o.lock; formT = 0; }
@@ -587,10 +616,48 @@ body{margin:0;background:#000}
   }
   var h1 = document.querySelector('h1'); if (h1) h1.addEventListener('click', morphName);
   var engine = mmEngine(canvas, stage, { onMorph: morphName, onForm: function (i) { set('formNo', p2(i + 1)); set('formName', FORMS[i][0]); set('formSym', FORMS[i][1]); } });
-  var t0 = Date.now();
+  /* ---------- the sky right now: geocentric ecliptic longitudes, the same from anywhere on Earth ---------- */
+  var D2R = Math.PI / 180;
+  /* a, e, I, L, long. of perihelion, node, then their rates per century (JPL approximate elements, 1800–2050) */
+  var ORB = {
+    EAR: [1.00000261, 0.01671123, -0.00001531, 100.46457166, 102.93768193, 0, 0.00000562, -0.00004392, -0.01294668, 35999.37244981, 0.32327364, 0],
+    MER: [0.38709927, 0.20563593, 7.00497902, 252.2503235, 77.45779628, 48.33076593, 0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081],
+    VEN: [0.72333566, 0.00677672, 3.39467605, 181.9790995, 131.60246718, 76.67984255, 0.0000039, -0.00004107, -0.0007889, 58517.81538729, 0.00268329, -0.27769418],
+    MAR: [1.52371034, 0.0933941, 1.84969142, -4.55343205, -23.94362959, 49.55953891, 0.00001847, 0.00007882, -0.00813131, 19140.30268499, 0.44441088, -0.29257343],
+    JUP: [5.202887, 0.04838624, 1.30439695, 34.39644051, 14.72847983, 100.47390909, -0.00011607, -0.00013253, -0.00183714, 3034.74612775, 0.21252668, 0.20469106],
+    SAT: [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448, -0.0012506, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794]
+  };
+  function helio(el, T) {
+    var a = el[0] + el[6] * T, e = el[1] + el[7] * T, I = (el[2] + el[8] * T) * D2R, w = el[4] + el[10] * T, O = el[5] + el[11] * T;
+    var M = (((el[3] + el[9] * T - w) % 360) * D2R), E = M, i;
+    for (i = 0; i < 10; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    var xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E), om = (w - O) * D2R, On = O * D2R;
+    var co = Math.cos(om), so = Math.sin(om), cO = Math.cos(On), sO = Math.sin(On), cI = Math.cos(I);
+    return [(co * cO - so * sO * cI) * xp + (-so * cO - co * sO * cI) * yp, (co * sO + so * cO * cI) * xp + (-so * sO + co * cO * cI) * yp];
+  }
+  function n360(v) { v %= 360; return v < 0 ? v + 360 : v; }
+  function mmSky(ms) {
+    var jd = ms / 86400000 + 2440587.5, n = jd - 2451545, T = n / 36525, s = function (d) { return Math.sin(d * D2R); };
+    var g = 357.528 + 0.9856003 * n;
+    var sun = n360(280.46 + 0.9856474 * n + 1.915 * s(g) + 0.02 * s(2 * g));
+    var au = 1.00014 - 0.01671 * Math.cos(g * D2R) - 0.00014 * Math.cos(2 * g * D2R);
+    var moon = n360(218.32 + 481267.881 * T + 6.29 * s(135 + 477198.87 * T) - 1.27 * s(259.3 - 413335.36 * T) + 0.66 * s(235.7 + 890534.22 * T) + 0.21 * s(269.9 + 954397.74 * T) - 0.19 * s(357.5 + 35999.05 * T) - 0.11 * s(186.5 + 966404.03 * T));
+    var el = n360(moon - sun), out = { jd: jd, sun: sun, au: au, moon: moon, lit: (1 - Math.cos(el * D2R)) / 2, wax: el < 180, bodies: [{ tag: 'SOL', lon: sun, kind: 0 }, { tag: 'LUNA', lon: moon, kind: 1 }] };
+    var e = helio(ORB.EAR, T), k, p;
+    for (k in ORB) if (k !== 'EAR') { p = helio(ORB[k], T); out.bodies.push({ tag: k, lon: n360(Math.atan2(p[1] - e[1], p[0] - e[0]) / D2R + 1.397 * T), kind: 2 }); }
+    return out;
+  }
+  var t0 = Date.now(), skyN = 0;
   function tick() {
     var d = new Date(), up = Math.floor((Date.now() - t0) / 1000);
     set('clock', p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()));
+    if (skyN++ % 20 === 0) {
+      var k = mmSky(Date.now());
+      engine.setBodies(k.bodies);
+      set('sol', k.sun.toFixed(2) + '° · ' + k.au.toFixed(4) + ' AU');
+      set('luna', k.moon.toFixed(2) + '° · ' + Math.round(k.lit * 100) + '% ' + (k.wax ? 'WAX' : 'WANE'));
+    }
+    set('jd', (Date.now() / 86400000 + 2440587.5).toFixed(5));
     set('uptime', p2(Math.floor(up / 3600)) + ':' + p2(Math.floor(up / 60) % 60) + ':' + p2(up % 60));
   }
   tick(); setInterval(tick, 1000);
