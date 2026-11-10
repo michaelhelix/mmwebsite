@@ -850,42 +850,45 @@ body{margin:0;background:#000}
       PT = new Float32Array(PN * 4);
       for (var i = 0; i < PN; i++) { PT[i * 4] = (Math.random() * 2 - 1) * 1.7; PT[i * 4 + 1] = (Math.random() * 2 - 1) * 1.7; PT[i * 4 + 2] = 0.03 + Math.random() * 0.97; PT[i * 4 + 3] = Math.floor(Math.random() * GL.length); }
     }
-    /* conglomerates: small groups of characters joined by thin lines that grow from one character to the next */
+    /* conglomerates: groups of characters that drift, turn and wander; a thin line appears between any two that come close and fades when they part */
     var CL = [];
     function clusterNew(cl, far) {
-      var n = 5 + Math.floor(Math.random() * 5), r = 0.1 + Math.random() * 0.14, i, j, d, a, b, seen = {}, q, best;
-      cl.x = (Math.random() * 2 - 1) * 0.95; cl.y = (Math.random() * 2 - 1) * 0.95; cl.z = far ? 1 : 0.3 + Math.random() * 0.7; cl.age = far ? 0 : Math.random() * 2; cl.N = []; cl.E = [];
-      for (i = 0; i < n; i++) cl.N.push({ x: (Math.random() * 2 - 1) * r, y: (Math.random() * 2 - 1) * r, z: (Math.random() * 2 - 1) * 0.04, g: Math.floor(Math.random() * GL.length), d: i ? 99 : 0, sx: 0, sy: 0, ok: false });
-      for (i = 0; i < n; i++) { /* each character links to its two nearest neighbours */
-        d = [];
-        for (j = 0; j < n; j++) if (j !== i) d.push([Math.pow(cl.N[i].x - cl.N[j].x, 2) + Math.pow(cl.N[i].y - cl.N[j].y, 2), j]);
-        d.sort(function (u, v) { return u[0] - v[0]; });
-        for (j = 0; j < 2 && j < d.length; j++) { a = Math.min(i, d[j][1]); b = Math.max(i, d[j][1]); if (!seen[a + '-' + b]) { seen[a + '-' + b] = 1; cl.E.push([a, b, 0]); } }
-      }
-      for (q = 0; q < n; q++) for (i = 0; i < cl.E.length; i++) { /* growth order: outward from the first character */
-        a = cl.N[cl.E[i][0]]; b = cl.N[cl.E[i][1]]; best = Math.min(a.d, b.d) + 1;
-        if (a.d > best) a.d = best; if (b.d > best) b.d = best;
-      }
-      for (i = 0; i < cl.E.length; i++) { a = cl.N[cl.E[i][0]]; b = cl.N[cl.E[i][1]]; cl.E[i][2] = Math.min(a.d, b.d, 8) * 0.22; if (a.d > b.d) { q = cl.E[i][0]; cl.E[i][0] = cl.E[i][1]; cl.E[i][1] = q; } }
+      var n = 4 + Math.floor(Math.random() * 6), i;
+      cl.r = 0.1 + Math.random() * 0.16; cl.x = (Math.random() * 2 - 1) * 0.85; cl.y = (Math.random() * 2 - 1) * 0.85; cl.z = far ? 1 : 0.2 + Math.random() * 0.8;
+      cl.vx = (Math.random() * 2 - 1) * 0.07; cl.vy = (Math.random() * 2 - 1) * 0.07; cl.w = (Math.random() * 2 - 1) * 0.7; cl.age = far ? 0 : Math.random() * 3; cl.N = [];
+      for (i = 0; i < n; i++) cl.N.push({ x: (Math.random() * 2 - 1) * cl.r, y: (Math.random() * 2 - 1) * cl.r, z: (Math.random() * 2 - 1) * 0.04, a: cl.r * (0.35 + Math.random() * 0.5), fx: 0.7 + Math.random() * 1.3, fy: 0.7 + Math.random() * 1.3, px: Math.random() * 6.3, py: Math.random() * 6.3, g: Math.floor(Math.random() * GL.length), lx: 0, ly: 0, sx: 0, sy: 0, pr: 1 });
     }
     function clusters(dt, g, out, m, fadeK) {
-      var want = W < 640 ? 8 : 12, i, j, cl, nd, e, a, b, pr, al, p, sz;
+      var want = W < 640 ? 24 : 40, i, j, q, cl, c2, nd, a, b, d, th, al, sz, cr, sr, lx, ly;
       while (CL.length < want) { cl = {}; clusterNew(cl, false); CL.push(cl); }
       c.lineWidth = 1;
       for (i = 0; i < CL.length; i++) {
-        cl = CL[i]; cl.z -= bV * dt * 0.6; cl.age += dt;
+        cl = CL[i]; cl.z -= bV * dt * 0.6; cl.age += dt; cl.x += cl.vx * dt; cl.y += cl.vy * dt;
         if (cl.z < 0.07) clusterNew(cl, true);
-        al = Math.min(1, (1 - cl.z) * 2.2) * Math.min(1, (cl.z - 0.07) * 9) * fadeK * g;
+        cl.al = al = Math.min(1, 0.4 + (1 - cl.z) * 2.4) * Math.min(1, (cl.z - 0.07) * 9) * sm(cl.age / 0.9) * fadeK * g;
         if (al < 0.02) continue;
-        for (j = 0; j < cl.N.length; j++) { nd = cl.N[j]; pr = 1 / Math.max(0.05, cl.z + nd.z); nd.sx = cx + (cl.x + nd.x) * out * pr * m; nd.sy = cy + (cl.y + nd.y) * out * pr * m; nd.pr = pr; }
-        c.strokeStyle = wa(0.6 * al); c.beginPath();
-        for (j = 0; j < cl.E.length; j++) {
-          e = cl.E[j]; p = sm((cl.age - e[2]) / 0.55); if (p <= 0) continue;
-          a = cl.N[e[0]]; b = cl.N[e[1]]; c.moveTo(a.sx, a.sy); c.lineTo(a.sx + (b.sx - a.sx) * p, a.sy + (b.sy - a.sy) * p);
-        }
-        c.stroke();
+        cr = Math.cos(cl.age * cl.w); sr = Math.sin(cl.age * cl.w);
         for (j = 0; j < cl.N.length; j++) {
-          nd = cl.N[j]; sz = Math.min(64, 12 * nd.pr);
+          nd = cl.N[j];
+          lx = nd.x + nd.a * Math.sin(cl.age * nd.fx + nd.px); ly = nd.y + nd.a * Math.cos(cl.age * nd.fy + nd.py);
+          nd.lx = lx * cr - ly * sr; nd.ly = lx * sr + ly * cr;
+          nd.pr = 1 / Math.max(0.05, cl.z + nd.z); nd.sx = cx + (cl.x + nd.lx) * out * nd.pr * m; nd.sy = cy + (cl.y + nd.ly) * out * nd.pr * m;
+          if (Math.random() < 0.004) nd.g = Math.floor(Math.random() * GL.length);
+        }
+        th = cl.r * 1.25;
+        for (j = 0; j < cl.N.length; j++) for (q = j + 1; q < cl.N.length; q++) {
+          a = cl.N[j]; b = cl.N[q]; d = Math.sqrt((a.lx - b.lx) * (a.lx - b.lx) + (a.ly - b.ly) * (a.ly - b.ly));
+          if (d >= th) continue;
+          c.strokeStyle = wa(0.95 * al * sm((1 - d / th) * 1.6)); c.beginPath(); c.moveTo(a.sx, a.sy); c.lineTo(b.sx, b.sy); c.stroke();
+        }
+        for (j = 0; j < i; j++) { /* a line across to a neighbouring group when two pass close by */
+          c2 = CL[j]; if (!(c2.al > 0.02) || Math.abs(c2.z - cl.z) > 0.14) continue;
+          a = cl.N[0]; b = c2.N[0]; d = Math.sqrt((a.sx - b.sx) * (a.sx - b.sx) + (a.sy - b.sy) * (a.sy - b.sy)); th = Math.min(W, H) * 0.42;
+          if (d >= th) continue;
+          c.strokeStyle = wa(0.45 * Math.min(al, c2.al) * sm((1 - d / th) * 1.6)); c.beginPath(); c.moveTo(a.sx, a.sy); c.lineTo(b.sx, b.sy); c.stroke();
+        }
+        for (j = 0; j < cl.N.length; j++) {
+          nd = cl.N[j]; sz = Math.min(60, 13 * nd.pr);
           c.fillStyle = '#000'; c.globalAlpha = Math.min(1, al * 1.2); c.fillRect(nd.sx - sz * 0.32, nd.sy - sz * 0.42, sz * 0.64, sz * 0.84);
           c.drawImage(atlas, (nd.g % 16) * AC, Math.floor(nd.g / 16) * AC, AC, AC, nd.sx - sz / 2, nd.sy - sz / 2, sz, sz);
         }
