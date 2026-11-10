@@ -59,11 +59,14 @@ body{margin:0;background:#000}
 <div class="mm-fade" aria-hidden="true" style="position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1px solid rgba(255,255,255,.4);border-right:1px solid rgba(255,255,255,.4);pointer-events:none;animation-delay:2.4s"></div>
 <header style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,3vw,32px) clamp(20px,4vw,44px) 0;font-size:10px;letter-spacing:.22em;line-height:1.9;color:rgba(255,255,255,.55);text-transform:uppercase">
 <div class="mm-fade" style="animation-delay:2.6s">
-<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.1</span></div>
+<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.2</span></div>
 <div>Local <span data-mm="clock"></span></div>
+<div>Sol <span data-mm="sol"></span></div>
+<div>Luna <span data-mm="luna"></span></div>
+<div class="mm-hide-sm">JD <span data-mm="jd"></span></div>
 </div>
 <div class="mm-fade" style="animation-delay:2.8s;text-align:right">
-<div>Form <span data-mm="formNo"></span>/04</div>
+<div>Form <span data-mm="formNo"></span>/05</div>
 <div style="color:#fff"><span data-mm="formName"></span> <span class="mm-hide-sm" style="color:rgba(255,255,255,.55)"><span data-mm="formSym"></span></span></div>
 <div class="mm-hide-sm">T+<span data-mm="uptime"></span></div>
 </div>
@@ -95,7 +98,7 @@ body{margin:0;background:#000}
 <button type="button" class="mm-node mm-corners" data-idx="04" style="animation-delay:4.58s"><svg class="mm-glyph" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><polygon points="8,2 13.2,5 13.2,11 8,14 2.8,11 2.8,5" style="fill:none;stroke:currentColor;stroke-width:1"></polygon></svg><span class="mm-label">Contact</span><span style="margin-left:auto;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.5)">04</span></button>
 </nav>
 <footer style="position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 24px;padding:clamp(20px,3.5vh,34px) clamp(20px,4vw,44px) clamp(18px,3vw,30px);font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.55);text-transform:uppercase">
-<div class="mm-fade" style="display:flex;align-items:center;gap:10px;animation-delay:3.0s"><span class="mm-blink" aria-hidden="true" style="display:inline-block;width:6px;height:6px;background:#fff"></span><span>System online</span><span class="mm-hide-sm">// destination undefined</span></div>
+<div class="mm-fade" style="display:flex;align-items:center;gap:10px;animation-delay:3.0s"><span class="mm-blink" aria-hidden="true" style="display:inline-block;width:6px;height:6px;background:#fff"></span><span>System online</span><span class="mm-hide-sm">// tracking 7 bodies</span></div>
 <div class="mm-fade" style="animation-delay:3.1s">© 2026 Michael Meus</div>
 </footer>
 <div id="mm-panel" style="display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.55)">
@@ -120,7 +123,7 @@ body{margin:0;background:#000}
   opts = opts || {};
   var ctx = canvas.getContext('2d');
   var noop = function () {};
-  if (!ctx) return { setHover: noop, setDim: noop, pointer: noop, setOptions: noop, stop: noop };
+  if (!ctx) return { setBodies: noop, setHover: noop, setDim: noop, pointer: noop, setOptions: noop, stop: noop };
 
   var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var PHI = (1 + Math.sqrt(5)) / 2, TAU = Math.PI * 2;
@@ -135,7 +138,7 @@ body{margin:0;background:#000}
   var lock = typeof opts.lock === 'number' ? opts.lock : -1;
   var px = 0, py = 0, tx = 0, ty = 0, lastPX = null, spinVel = 0, rotY = 0.6, rotX = 0.4;
   var cur = lock >= 0 ? lock : 0, formT = 0, trans = null;
-  var track = { i: 0, t: 0 }, ro = null;
+  var track = { i: 0, t: 0 }, ro = null, bodies = null;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function ease(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
@@ -143,80 +146,158 @@ body{margin:0;background:#000}
   function pad(n, l) { n = String(n); while (n.length < l) n = '0' + n; return n; }
   function sgn(v) { return (v < 0 ? '−' : '+') + Math.abs(v).toFixed(2); }
 
-  /* ---------- geometry: vertices, edges = all pairs at the shortest distance ---------- */
+  /* ---------- geometry: every form lives in 4D (3D forms sit at w = 0); edges = all pairs at the shortest distance ---------- */
   function finish(V) {
     var m = 0, i, j, k, n, d, q, best = Infinity, D = [], E = [];
-    for (i = 0; i < V.length; i++) { n = 0; for (k = 0; k < V[i].length; k++) n += V[i][k] * V[i][k]; m = Math.max(m, Math.sqrt(n)); }
-    for (i = 0; i < V.length; i++) for (k = 0; k < V[i].length; k++) V[i][k] /= m;
+    for (i = 0; i < V.length; i++) { if (V[i].length < 4) V[i].push(0); n = 0; for (k = 0; k < 4; k++) n += V[i][k] * V[i][k]; m = Math.max(m, Math.sqrt(n)); }
+    for (i = 0; i < V.length; i++) for (k = 0; k < 4; k++) V[i][k] /= m;
     for (i = 0; i < V.length; i++) for (j = i + 1; j < V.length; j++) {
-      d = 0; for (k = 0; k < V[i].length; k++) { q = V[i][k] - V[j][k]; d += q * q; }
+      d = 0; for (k = 0; k < 4; k++) { q = V[i][k] - V[j][k]; d += q * q; }
       D.push([i, j, d]); if (d < best) best = d;
     }
     for (i = 0; i < D.length; i++) if (D[i][2] < best * 1.001) E.push([D[i][0], D[i][1]]);
     var P = []; for (i = 0; i < V.length; i++) P.push({ x: 0, y: 0, z: 0 });
     return { V: V, E: E, P: P };
   }
-  var S = [-1, 1], dV = [], iV = [], tV = [], cV = [];
+  var S = [-1, 1], dV = [], iV = [], tV = [], cV = [], hV = [];
   S.forEach(function (a) { S.forEach(function (b) {
     S.forEach(function (c) { dV.push([a, b, c]); });
     dV.push([0, a / PHI, b * PHI], [a / PHI, b * PHI, 0], [a * PHI, 0, b / PHI]);
     iV.push([0, a, b * PHI], [a, b * PHI, 0], [a * PHI, 0, b]);
-    S.forEach(function (c) { S.forEach(function (d) { tV.push([a, b, c, d]); }); });
+    S.forEach(function (c) { S.forEach(function (d) { tV.push([a, b, c, d]); cV.push([a / 2, b / 2, c / 2, d / 2]); }); });
   }); });
-  for (var ii = 0; ii < 4; ii++) for (var jj = ii + 1; jj < 4; jj++) S.forEach(function (a) { S.forEach(function (b) {
-    var v = [0, 0, 0, 0]; v[ii] = a; v[jj] = b; cV.push(v);
-  }); });
+  for (var ii = 0; ii < 4; ii++) S.forEach(function (a) { var v = [0, 0, 0, 0]; v[ii] = a; cV.push(v); });
+  /* 600-cell = the 24-cell's vertices + 96 even permutations of (±φ/2, ±1/2, ±1/2φ, 0) */
+  cV.forEach(function (v) { hV.push(v.slice()); });
+  var EVEN = [[0,1,2,3],[0,2,3,1],[0,3,1,2],[1,0,3,2],[1,2,0,3],[1,3,2,0],[2,0,1,3],[2,1,3,0],[2,3,0,1],[3,0,2,1],[3,1,0,2],[3,2,1,0]];
+  EVEN.forEach(function (pm) { S.forEach(function (a) { S.forEach(function (b) { S.forEach(function (c) {
+    var base = [a * PHI / 2, b / 2, c / (2 * PHI), 0], v = [0, 0, 0, 0];
+    for (var k = 0; k < 4; k++) v[pm[k]] = base[k];
+    hV.push(v);
+  }); }); }); });
+  /* q: how 4-dimensional the form is, A: line brightness, sub: depth steps per edge */
   var FORMS = [
-    { d4: false, g: finish(dV) },
-    { d4: true, g: finish(tV) },
-    { d4: false, g: finish(iV) },
-    { d4: true, g: finish(cV) }
+    { q: 0, A: 1, sub: 8, g: finish(dV) },
+    { q: 1, A: 1, sub: 8, g: finish(tV) },
+    { q: 0, A: 1, sub: 8, g: finish(iV) },
+    { q: 1, A: 0.92, sub: 4, g: finish(cV) },
+    { q: 1, A: 0.6, sub: 1, g: finish(hV) }
   ];
   if (cur >= FORMS.length) cur = 0;
 
   /* ---------- projection ---------- */
-  function project(f, t) {
-    var V = f.g.V, P = f.g.P, i, v, x, y, z, w, s, x1, y1, z1, w1, x2, z2, y2, z3, p;
-    var ry = rotY + px * 0.55, rx = rotX;
-    var cY = Math.cos(ry), sY = Math.sin(ry), cX = Math.cos(rx), sX = Math.sin(rx);
-    var a = t * 0.23, b = t * 0.13, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
-    for (i = 0; i < V.length; i++) {
-      v = V[i]; x = v[0]; y = v[1]; z = v[2];
-      if (f.d4) {
-        w = v[3];
-        x1 = x * ca - w * sa; w1 = x * sa + w * ca;
-        y1 = y * cb - z * sb; z1 = y * sb + z * cb;
-        s = 2.2 / (2.4 - w1);
-        x = x1 * s; y = y1 * s; z = z1 * s;
-      }
-      x2 = x * cY + z * sY; z2 = -x * sY + z * cY;
-      y2 = y * cX - z2 * sX; z3 = y * sX + z2 * cX;
-      p = 3.4 / (3.4 - z3);
-      P[i].x = cx + x2 * R * p; P[i].y = cy + y2 * R * p; P[i].z = z3;
+  var cY = 1, sY = 0, cX = 1, sX = 0, ca = 1, sa = 0, cb = 1, sb = 0, Q = 0, ZM = 1;
+  function view(t, q) {
+    var ry = rotY + px * 0.55, a = t * 0.23, b = t * 0.13;
+    cY = Math.cos(ry); sY = Math.sin(ry); cX = Math.cos(rotX); sX = Math.sin(rotX);
+    ca = Math.cos(a); sa = Math.sin(a); cb = Math.cos(b); sb = Math.sin(b);
+    Q = q; ZM = 1 + 0.6 * q;
+  }
+  function proj(x, y, z, w, o) {
+    if (Q > 0) {
+      var x1 = x * ca - w * sa, w1 = x * sa + w * ca, y1 = y * cb - z * sb, z1 = y * sb + z * cb, s = 2.2 / (2.4 - w1);
+      x += (x1 * s - x) * Q; y += (y1 * s - y) * Q; z += (z1 * s - z) * Q;
+    }
+    var x2 = x * cY + z * sY, z2 = -x * sY + z * cY, y2 = y * cX - z2 * sX, z3 = y * sX + z2 * cX, p = 3.4 / (3.4 - z3);
+    o.x = cx + x2 * R * p; o.y = cy + y2 * R * p; o.z = z3;
+  }
+  function project(f) { var V = f.g.V, P = f.g.P, i, v; for (i = 0; i < V.length; i++) { v = V[i]; proj(v[0], v[1], v[2], v[3], P[i]); } }
+
+  /* ---------- depth: lines are sorted into bands, far = faint and hairline, near = bright and firm ---------- */
+  var NB = 12, bands = [];
+  for (var bi = 0; bi < NB; bi++) bands.push([]);
+  function depth(z) { return clamp((z / ZM + 1) / 2, 0, 1); }
+  function seg(ax, ay, az, bx, by, bz, sub) {
+    var j, t0, t1, arr;
+    for (j = 0; j < sub; j++) {
+      t0 = j / sub; t1 = (j + 1) / sub;
+      arr = bands[Math.min(NB - 1, (depth(az + (bz - az) * (t0 + t1) * 0.5) * NB) | 0)];
+      arr.push(ax + (bx - ax) * t0, ay + (by - ay) * t0, ax + (bx - ax) * t1, ay + (by - ay) * t1);
     }
   }
-
+  function flush(alpha) {
+    var b, i, arr, d;
+    for (b = 0; b < NB; b++) {
+      arr = bands[b]; if (!arr.length) continue;
+      if (alpha > 0.003) {
+        d = (b + 0.5) / NB;
+        ctx.strokeStyle = rgba(alpha * (0.08 + 0.92 * Math.pow(d, 1.6)));
+        ctx.lineWidth = 0.55 + 0.85 * d;
+        ctx.beginPath();
+        for (i = 0; i < arr.length; i += 4) { ctx.moveTo(arr[i], arr[i + 1]); ctx.lineTo(arr[i + 2], arr[i + 3]); }
+        ctx.stroke();
+      }
+      arr.length = 0;
+    }
+    ctx.lineWidth = 1;
+  }
+  function drawDots(f, alpha) {
+    if (alpha <= 0.003) return;
+    var P = f.g.P, i, d, s;
+    for (i = 0; i < P.length; i++) {
+      d = depth(P[i].z); s = 0.8 + d * 1.8;
+      ctx.fillStyle = rgba(alpha * (0.14 + 0.86 * d * d));
+      ctx.fillRect(P[i].x - s / 2, P[i].y - s / 2, s, s);
+    }
+  }
   function drawForm(f, prog, alpha) {
     if (prog <= 0 || alpha <= 0.003) return;
-    var E = f.g.E, P = f.g.P, n = E.length, spread = 0.7, i, k, A, B, d, s;
-    ctx.lineWidth = 1;
+    var E = f.g.E, P = f.g.P, n = E.length, spread = 0.7, i, k, A, B;
     for (i = 0; i < n; i++) {
       k = clamp(prog * (1 + spread) - (i / n) * spread, 0, 1);
       if (k <= 0) continue;
       A = P[E[i][0]]; B = P[E[i][1]];
-      d = clamp(((A.z + B.z) * 0.5 + 1) / 2, 0, 1);
-      ctx.strokeStyle = rgba(alpha * (0.2 + 0.8 * d));
-      ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(A.x + (B.x - A.x) * k, A.y + (B.y - A.y) * k); ctx.stroke();
+      seg(A.x, A.y, A.z, A.x + (B.x - A.x) * k, A.y + (B.y - A.y) * k, A.z + (B.z - A.z) * k, f.sub);
     }
-    if (prog > 0.6) {
-      var va = alpha * clamp((prog - 0.6) / 0.4, 0, 1);
-      for (i = 0; i < P.length; i++) {
-        d = clamp((P[i].z + 1) / 2, 0, 1);
-        s = 1 + d * 1.3;
-        ctx.fillStyle = rgba(va * (0.3 + 0.7 * d));
-        ctx.fillRect(P[i].x - s / 2, P[i].y - s / 2, s, s);
-      }
+    flush(alpha * f.A);
+    if (prog > 0.6) drawDots(f, alpha * clamp((prog - 0.6) / 0.4, 0, 1));
+  }
+
+  /* ---------- morph: every edge of one form is paired with a nearby edge of the next, then travels to it across the sphere ---------- */
+  var morphs = {};
+  function buildMorph(ai, bi) {
+    var key = ai + '>' + bi; if (morphs[key]) return morphs[key];
+    var ga = FORMS[ai].g, gb = FORMS[bi].g, fwd = ga.E.length >= gb.E.length;
+    var big = fwd ? ga : gb, small = fwd ? gb : ga, nb = big.E.length, ns = small.E.length;
+    var i, j, k, d, q, best, bj, mb = [], ms = [], as = [], cnt = [];
+    function mid(g, e) { var a = g.V[e[0]], b = g.V[e[1]]; return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, (a[3] + b[3]) / 2]; }
+    function d2(a, b) { var s = 0, k, q; for (k = 0; k < 4; k++) { q = a[k] - b[k]; s += q * q; } return s; }
+    for (i = 0; i < nb; i++) mb.push(mid(big, big.E[i]));
+    for (j = 0; j < ns; j++) { ms.push(mid(small, small.E[j])); cnt.push(0); }
+    for (i = 0; i < nb; i++) { best = Infinity; bj = 0; for (j = 0; j < ns; j++) { d = d2(mb[i], ms[j]); if (d < best) { best = d; bj = j; } } as.push(bj); cnt[bj]++; }
+    for (j = 0; j < ns; j++) if (!cnt[j]) { /* no edge is left behind */
+      best = Infinity; bj = -1;
+      for (i = 0; i < nb; i++) if (cnt[as[i]] > 1) { d = d2(mb[i], ms[j]); if (d < best) { best = d; bj = i; } }
+      if (bj >= 0) { cnt[as[bj]]--; as[bj] = j; cnt[j] = 1; }
     }
+    var D = new Float32Array(nb * 16), delay = new Float32Array(nb), lo = Infinity, hi = -Infinity, e, f, s0, s1, t0, t1, tmp;
+    for (i = 0; i < nb; i++) {
+      e = big.E[i]; f = small.E[as[i]];
+      if (fwd) { s0 = big.V[e[0]]; s1 = big.V[e[1]]; t0 = small.V[f[0]]; t1 = small.V[f[1]]; }
+      else { s0 = small.V[f[0]]; s1 = small.V[f[1]]; t0 = big.V[e[0]]; t1 = big.V[e[1]]; }
+      if (d2(s0, t1) + d2(s1, t0) < d2(s0, t0) + d2(s1, t1)) { tmp = t0; t0 = t1; t1 = tmp; }
+      for (k = 0; k < 4; k++) { D[i * 16 + k] = s0[k]; D[i * 16 + 4 + k] = s1[k]; D[i * 16 + 8 + k] = t0[k]; D[i * 16 + 12 + k] = t1[k]; }
+      q = mb[i][0] * 0.42 + mb[i][1] * 0.78 + mb[i][2] * 0.31 + mb[i][3] * 0.34;
+      delay[i] = q; if (q < lo) lo = q; if (q > hi) hi = q;
+    }
+    for (i = 0; i < nb; i++) delay[i] = hi > lo ? (hi - delay[i]) / (hi - lo) : 0;
+    return (morphs[key] = { D: D, delay: delay, n: nb, sub: nb > 100 ? 1 : 4 });
+  }
+  var mo0 = { x: 0, y: 0, z: 0 }, mo1 = { x: 0, y: 0, z: 0 }, mv = [0, 0, 0, 0];
+  function morphPoint(D, o, k, out) {
+    var c, n = 0;
+    for (c = 0; c < 4; c++) { mv[c] = D[o + c] + (D[o + 8 + c] - D[o + c]) * k; n += mv[c] * mv[c]; }
+    n = n > 1e-6 ? 1 / Math.sqrt(n) : 1; /* stay on the sphere, so nothing collapses through the centre */
+    proj(mv[0] * n, mv[1] * n, mv[2] * n, mv[3] * n, out);
+  }
+  function drawMorph(m, T, alpha) {
+    var D = m.D, i, k, sp = 1.25;
+    for (i = 0; i < m.n; i++) {
+      k = ease(T * (1 + sp) - m.delay[i] * sp);
+      morphPoint(D, i * 16, k, mo0); morphPoint(D, i * 16 + 4, k, mo1);
+      seg(mo0.x, mo0.y, mo0.z, mo1.x, mo1.y, mo1.z, m.sub);
+    }
+    flush(alpha);
   }
 
   /* ---------- gyroscope rings ---------- */
@@ -283,6 +364,27 @@ body{margin:0;background:#000}
       ctx.font = '9px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(0.34 * a);
       for (i = 0; i < 12; i++) { ang = off + (i * TAU) / 12; ctx.fillText(pad(i * 30, 3), cx + Math.cos(ang) * (RR + 22), cy + Math.sin(ang) * (RR + 22)); }
     }
+    if (bodies) { /* real positions on the ring: 000 = the March equinox point, degrees = ecliptic longitude */
+      var bd, X, Y, lr;
+      ctx.font = '9px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (i = 0; i < bodies.length; i++) {
+        bd = bodies[i]; ang = off + (bd.lon * TAU) / 360; c = Math.cos(ang); s = Math.sin(ang);
+        X = cx + c * RR; Y = cy + s * RR; lr = RR - 21 - bd.lift * 15;
+        ctx.strokeStyle = rgba((bd.kind < 2 ? 0.5 : 0.3) * a); ctx.beginPath();
+        ctx.moveTo(cx + c * (RR - 6), cy + s * (RR - 6)); ctx.lineTo(cx + c * (lr + 7), cy + s * (lr + 7)); ctx.stroke();
+        ctx.fillStyle = '#000'; ctx.strokeStyle = rgba(0.95 * a);
+        if (bd.kind === 0) {
+          ctx.beginPath(); ctx.moveTo(X, Y - 5); ctx.lineTo(X + 5, Y); ctx.lineTo(X, Y + 5); ctx.lineTo(X - 5, Y); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = rgba(0.95 * a); ctx.fillRect(X - 1, Y - 1, 2, 2);
+        } else if (bd.kind === 1) {
+          ctx.beginPath(); ctx.arc(X, Y, 3.5, 0, TAU); ctx.fill(); ctx.stroke();
+        } else {
+          ctx.fillRect(X - 3.5, Y - 3.5, 7, 7); ctx.fillStyle = rgba(0.8 * a); ctx.fillRect(X - 1.5, Y - 1.5, 3, 3);
+        }
+        ctx.fillStyle = rgba((bd.kind < 2 ? 0.75 : 0.45) * a);
+        ctx.fillText(bd.tag, cx + c * lr, cy + s * lr);
+      }
+    }
     var sw = t * 0.32;
     ctx.strokeStyle = rgba(0.6 * a); ctx.beginPath(); ctx.arc(cx, cy, RR, sw, sw + 0.42); ctx.stroke();
     c = Math.cos(sw + 0.42); s = Math.sin(sw + 0.42);
@@ -325,7 +427,7 @@ body{margin:0;background:#000}
     ctx.moveTo(x + dir * 6, y - 6); ctx.lineTo(x + dir * 24, y - 24); ctx.lineTo(x + dir * 38, y - 24); ctx.stroke();
     ctx.font = '10px ' + FONT; ctx.textBaseline = 'middle'; ctx.textAlign = dir > 0 ? 'left' : 'right';
     ctx.fillStyle = rgba(0.7 * k);
-    ctx.fillText('V' + pad(track.i % P.length, 2) + '  ' + sgn((q.x - cx) / R) + ' ' + sgn((cy - q.y) / R) + ' ' + sgn(q.z), x + dir * 43, y - 24);
+    ctx.fillText('V' + pad(track.i % P.length, P.length > 99 ? 3 : 2) + '  ' + sgn((q.x - cx) / R) + ' ' + sgn((cy - q.y) / R) + ' ' + sgn(q.z), x + dir * 43, y - 24);
   }
 
   /* ---------- beam to the hovered sector button ---------- */
@@ -392,17 +494,21 @@ body{margin:0;background:#000}
     if (!trans && intro > 3.4) {
       formT += dt;
       var target = lock >= 0 ? lock : (!reduce && formT > HOLD ? (cur + 1) % FORMS.length : cur);
-      if (target !== cur) trans = { from: cur, to: target, t: 0, told: false };
+      if (target !== cur) trans = { from: cur, to: target, t: 0, told: false, m: buildMorph(cur, target), dur: Math.max(FORMS[cur].g.E.length, FORMS[target].g.E.length) > 100 ? 4.4 : 3.6 };
+      if (trans && !trans.sig) { trans.sig = true; if (opts.onMorph) opts.onMorph(); }
     }
     if (trans) {
       trans.t += dt;
-      var outP = 1 - ease(trans.t / 1.3), inP = ease((trans.t - 0.7) / 1.7);
-      if (!trans.told && trans.t >= 0.7) { trans.told = true; if (opts.onForm) opts.onForm(trans.to); }
-      project(FORMS[trans.from], mt); drawForm(FORMS[trans.from], outP, base);
-      project(FORMS[trans.to], mt); drawForm(FORMS[trans.to], inP, base);
-      if (trans.t >= 2.4) { cur = trans.to; trans = null; formT = 0; track.t = 0.4; }
+      var fa = FORMS[trans.from], fb = FORMS[trans.to], T = clamp(trans.t / trans.dur, 0, 1), eT = ease(T);
+      if (!trans.told && T >= 0.5) { trans.told = true; if (opts.onForm) opts.onForm(trans.to); }
+      view(mt, fa.q + (fb.q - fa.q) * eT);
+      drawMorph(trans.m, T, base * (fa.A + (fb.A - fa.A) * eT));
+      if (trans.t < 0.5) { project(fa); drawDots(fa, base * (1 - trans.t / 0.5)); }
+      if (trans.dur - trans.t < 0.7) { project(fb); drawDots(fb, base * (1 - (trans.dur - trans.t) / 0.7)); }
+      if (T >= 1) { cur = trans.to; trans = null; formT = 0; track.t = 0.4; }
     } else {
-      project(FORMS[cur], mt);
+      view(mt, FORMS[cur].q);
+      project(FORMS[cur]);
       drawForm(FORMS[cur], ease((intro - 1.05) / 1.9), base);
       if (intro > 4.4) drawTracker(FORMS[cur], fade * ease((intro - 4.4) / 0.6), dt);
     }
@@ -440,6 +546,11 @@ body{margin:0;background:#000}
       ty = clamp(((y - r.top) / r.height) * 2 - 1, -1, 1);
       if (buttons & 1) { if (lastPX != null) spinVel += (x - lastPX) * 0.012; lastPX = x; } else lastPX = null;
     },
+    setBodies: function (list) {
+      list = list.slice().sort(function (u, v) { return u.lon - v.lon; });
+      for (var i = 0; i < list.length; i++) list[i].lift = i && list[i].lon - list[i - 1].lon < 11 && !list[i - 1].lift ? 1 : 0;
+      bodies = list;
+    },
     setOptions: function (o) {
       if (typeof o.speed === 'number') userSpeed = o.speed;
       if (typeof o.lock === 'number') { lock = o.lock; formT = 0; }
@@ -453,14 +564,101 @@ body{margin:0;background:#000}
 };
   var root = document.getElementById('mm'), canvas = document.getElementById('mm-canvas'), stage = document.getElementById('mm-stage');
   var panel = document.getElementById('mm-panel'), dialog = panel.querySelector('[role=dialog]'), lastBtn = null;
-  var FORMS = [['DODECAHEDRON', '{5,3}'], ['TESSERACT', '{4,3,3}'], ['ICOSAHEDRON', '{3,5}'], ['24-CELL', '{3,4,3}']];
+  var FORMS = [['DODECAHEDRON', '{5,3}'], ['TESSERACT', '{4,3,3}'], ['ICOSAHEDRON', '{3,5}'], ['24-CELL', '{3,4,3}'], ['600-CELL', '{3,3,5}']];
   function set(k, v) { var els = document.querySelectorAll('[data-mm="' + k + '"]'); for (var i = 0; i < els.length; i++) els[i].textContent = v; }
   function p2(n) { return (n < 10 ? '0' : '') + n; }
-  var engine = mmEngine(canvas, stage, { onForm: function (i) { set('formNo', p2(i + 1)); set('formName', FORMS[i][0]); set('formSym', FORMS[i][1]); } });
-  var t0 = Date.now();
+  /* ---------- the name: each letter folds into the polygon with as many sides as it has strokes, then unfolds ---------- */
+  var glyphs = [], nameT0 = 0, nameOn = false, pageT0 = Date.now();
+  function ez(t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  [].forEach.call(document.querySelectorAll('h1 svg path'), function (p) {
+    var d = p.getAttribute('d'), tok = d.match(/[ML]|-?[\d.]+/g), segs = [], cur = null, i = 0, c, x, y, lo = 1e9, hi = -1e9;
+    while (i < tok.length) { c = tok[i++]; x = +tok[i++]; y = +tok[i++]; if (c === 'L') segs.push([cur[0], cur[1], x, y]); cur = [x, y]; if (x < lo) lo = x; if (x > hi) hi = x; }
+    var n = Math.min(6, Math.max(3, segs.length)), gx = (lo + hi) / 2, L, b, q, TAU = Math.PI * 2;
+    while (segs.length < 3) {
+      b = 0; L = -1;
+      for (i = 0; i < segs.length; i++) { q = Math.abs(segs[i][2] - segs[i][0]) + Math.abs(segs[i][3] - segs[i][1]); if (q > L) { L = q; b = i; } }
+      q = segs[b]; x = (q[0] + q[2]) / 2; y = (q[1] + q[3]) / 2;
+      segs.splice(b, 1, [q[0], q[1], x, y], [x, y, q[2], q[3]]);
+    }
+    segs.forEach(function (g) { g.a = (Math.atan2((g[1] + g[3]) / 2 - 50, (g[0] + g[2]) / 2 - gx) + Math.PI / 2 + TAU) % TAU; });
+    segs.sort(function (u, v) { return u.a - v.a; });
+    segs.forEach(function (g, k) {
+      g.e = Math.floor((k * n) / segs.length);
+      var a0 = -Math.PI / 2 + (g.e * TAU) / n, a1 = a0 + TAU / n;
+      var x0 = gx + Math.cos(a0) * 32, y0 = 50 + Math.sin(a0) * 32, x1 = gx + Math.cos(a1) * 32, y1 = 50 + Math.sin(a1) * 32;
+      g.f = Math.pow(g[0] - x1, 2) + Math.pow(g[1] - y1, 2) + Math.pow(g[2] - x0, 2) + Math.pow(g[3] - y0, 2) < Math.pow(g[0] - x0, 2) + Math.pow(g[1] - y0, 2) + Math.pow(g[2] - x1, 2) + Math.pow(g[3] - y1, 2);
+    });
+    glyphs.push({ p: p, d: d, segs: segs, n: n, x: gx, live: false });
+  });
+  function nameFrame(now) {
+    var t = (now - nameT0) / 1000, done = true, TAU = Math.PI * 2, i, j, g, lt, w, a0, a1, q, s, x0, y0, x1, y1, d;
+    for (i = 0; i < glyphs.length; i++) {
+      g = glyphs[i]; lt = t - i * 0.09;
+      if (lt < 2.7) done = false;
+      w = lt <= 0 ? 0 : lt < 1.7 ? ez(lt / 0.9) : 1 - ez((lt - 1.7) / 0.9);
+      if (w <= 0) { if (g.live) { g.p.setAttribute('d', g.d); g.live = false; } continue; }
+      d = '';
+      for (j = 0; j < g.segs.length; j++) {
+        s = g.segs[j];
+        a0 = -Math.PI / 2 + lt * 0.8 + (s.e * TAU) / g.n; a1 = a0 + TAU / g.n;
+        if (s.f) { q = a0; a0 = a1; a1 = q; }
+        x0 = s[0] + (g.x + Math.cos(a0) * 32 - s[0]) * w; y0 = s[1] + (50 + Math.sin(a0) * 32 - s[1]) * w;
+        x1 = s[2] + (g.x + Math.cos(a1) * 32 - s[2]) * w; y1 = s[3] + (50 + Math.sin(a1) * 32 - s[3]) * w;
+        d += 'M' + x0.toFixed(1) + ',' + y0.toFixed(1) + ' L' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' ';
+      }
+      if (!g.live) { g.live = true; g.p.style.animation = 'none'; g.p.style.strokeDasharray = 'none'; g.p.style.strokeDashoffset = '0'; }
+      g.p.setAttribute('d', d);
+    }
+    if (done) nameOn = false; else requestAnimationFrame(nameFrame);
+  }
+  function morphName() {
+    if (nameOn || Date.now() - pageT0 < 4600) return;
+    nameOn = true; nameT0 = performance.now(); requestAnimationFrame(nameFrame);
+  }
+  var h1 = document.querySelector('h1'); if (h1) h1.addEventListener('click', morphName);
+  var engine = mmEngine(canvas, stage, { onMorph: morphName, onForm: function (i) { set('formNo', p2(i + 1)); set('formName', FORMS[i][0]); set('formSym', FORMS[i][1]); } });
+  /* ---------- the sky right now: geocentric ecliptic longitudes, the same from anywhere on Earth ---------- */
+  var D2R = Math.PI / 180;
+  /* a, e, I, L, long. of perihelion, node, then their rates per century (JPL approximate elements, 1800–2050) */
+  var ORB = {
+    EAR: [1.00000261, 0.01671123, -0.00001531, 100.46457166, 102.93768193, 0, 0.00000562, -0.00004392, -0.01294668, 35999.37244981, 0.32327364, 0],
+    MER: [0.38709927, 0.20563593, 7.00497902, 252.2503235, 77.45779628, 48.33076593, 0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081],
+    VEN: [0.72333566, 0.00677672, 3.39467605, 181.9790995, 131.60246718, 76.67984255, 0.0000039, -0.00004107, -0.0007889, 58517.81538729, 0.00268329, -0.27769418],
+    MAR: [1.52371034, 0.0933941, 1.84969142, -4.55343205, -23.94362959, 49.55953891, 0.00001847, 0.00007882, -0.00813131, 19140.30268499, 0.44441088, -0.29257343],
+    JUP: [5.202887, 0.04838624, 1.30439695, 34.39644051, 14.72847983, 100.47390909, -0.00011607, -0.00013253, -0.00183714, 3034.74612775, 0.21252668, 0.20469106],
+    SAT: [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448, -0.0012506, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794]
+  };
+  function helio(el, T) {
+    var a = el[0] + el[6] * T, e = el[1] + el[7] * T, I = (el[2] + el[8] * T) * D2R, w = el[4] + el[10] * T, O = el[5] + el[11] * T;
+    var M = (((el[3] + el[9] * T - w) % 360) * D2R), E = M, i;
+    for (i = 0; i < 10; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    var xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E), om = (w - O) * D2R, On = O * D2R;
+    var co = Math.cos(om), so = Math.sin(om), cO = Math.cos(On), sO = Math.sin(On), cI = Math.cos(I);
+    return [(co * cO - so * sO * cI) * xp + (-so * cO - co * sO * cI) * yp, (co * sO + so * cO * cI) * xp + (-so * sO + co * cO * cI) * yp];
+  }
+  function n360(v) { v %= 360; return v < 0 ? v + 360 : v; }
+  function mmSky(ms) {
+    var jd = ms / 86400000 + 2440587.5, n = jd - 2451545, T = n / 36525, s = function (d) { return Math.sin(d * D2R); };
+    var g = 357.528 + 0.9856003 * n;
+    var sun = n360(280.46 + 0.9856474 * n + 1.915 * s(g) + 0.02 * s(2 * g));
+    var au = 1.00014 - 0.01671 * Math.cos(g * D2R) - 0.00014 * Math.cos(2 * g * D2R);
+    var moon = n360(218.32 + 481267.881 * T + 6.29 * s(135 + 477198.87 * T) - 1.27 * s(259.3 - 413335.36 * T) + 0.66 * s(235.7 + 890534.22 * T) + 0.21 * s(269.9 + 954397.74 * T) - 0.19 * s(357.5 + 35999.05 * T) - 0.11 * s(186.5 + 966404.03 * T));
+    var el = n360(moon - sun), out = { jd: jd, sun: sun, au: au, moon: moon, lit: (1 - Math.cos(el * D2R)) / 2, wax: el < 180, bodies: [{ tag: 'SOL', lon: sun, kind: 0 }, { tag: 'LUNA', lon: moon, kind: 1 }] };
+    var e = helio(ORB.EAR, T), k, p;
+    for (k in ORB) if (k !== 'EAR') { p = helio(ORB[k], T); out.bodies.push({ tag: k, lon: n360(Math.atan2(p[1] - e[1], p[0] - e[0]) / D2R + 1.397 * T), kind: 2 }); }
+    return out;
+  }
+  var t0 = Date.now(), skyN = 0;
   function tick() {
     var d = new Date(), up = Math.floor((Date.now() - t0) / 1000);
     set('clock', p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()));
+    if (skyN++ % 20 === 0) {
+      var k = mmSky(Date.now());
+      engine.setBodies(k.bodies);
+      set('sol', k.sun.toFixed(2) + '° · ' + k.au.toFixed(4) + ' AU');
+      set('luna', k.moon.toFixed(2) + '° · ' + Math.round(k.lit * 100) + '% ' + (k.wax ? 'WAX' : 'WANE'));
+    }
+    set('jd', (Date.now() / 86400000 + 2440587.5).toFixed(5));
     set('uptime', p2(Math.floor(up / 3600)) + ':' + p2(Math.floor(up / 60) % 60) + ':' + p2(up % 60));
   }
   tick(); setInterval(tick, 1000);
