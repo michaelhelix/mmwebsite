@@ -133,6 +133,13 @@ body{margin:0;background:#000}
 <div data-mm="archPos"></div>
 </div>
 <button type="button" class="mm-btn" id="mm-arch-x" style="position:absolute;top:clamp(14px,3vw,28px);right:clamp(16px,4vw,40px);background:rgba(0,0,0,.6)">[ Exit ]</button>
+<div id="mm-cap" style="display:none;position:absolute;left:0;right:0;bottom:clamp(14px,3vh,28px);padding:0 16px;text-align:center;pointer-events:none">
+<div style="display:inline-flex;flex-direction:column;gap:9px;align-items:center;max-width:100%;pointer-events:auto">
+<div id="mm-cap-t" style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#fff"></div>
+<div id="mm-cap-m" style="font-size:11px;line-height:1.6;color:rgba(255,255,255,.65)"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button type="button" class="mm-btn" id="mm-cap-p" style="background:rgba(0,0,0,.6)">[ Prev ]</button><button type="button" class="mm-btn" id="mm-cap-l" style="background:rgba(0,0,0,.6)">[ Frames ]</button><button type="button" class="mm-btn" id="mm-cap-n" style="background:rgba(0,0,0,.6)">[ Next ]</button><a class="mm-btn" id="mm-cap-o" target="_blank" rel="noopener" style="display:none;text-decoration:none;background:rgba(0,0,0,.6)">[ Open ]</a></div>
+</div>
+</div>
 <div id="mm-arch-skip" style="position:absolute;left:0;right:0;bottom:clamp(20px,5vh,40px);text-align:center;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.45);text-transform:uppercase;pointer-events:none">Tap to skip</div>
 <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:84px 20px 28px;box-sizing:border-box;pointer-events:none">
 <div id="mm-arch-files" role="dialog" aria-label="Archive files" class="mm-corners" style="display:none;pointer-events:auto;width:100%;max-width:560px;max-height:100%;overflow:auto;box-sizing:border-box;padding:22px 22px 20px;border:1px solid rgba(255,255,255,.26);background-color:rgba(0,0,0,.84)">
@@ -705,7 +712,15 @@ body{margin:0;background:#000}
   /* ---------- sectors you fly into: 01 DESIGN (gallery hall) and 03 ARCHIVE (data hall) ---------- */
   /* To hang a design, add a line here, e.g.
      { name: 'Poster 01', type: 'Poster', date: '10/11/2026', img: 'design/poster-01.jpg', href: 'design/poster-01.jpg', note: 'One line about it.' } */
-  var DESIGN = [];
+  /* Example images for now, loaded straight from Higgsfield; replace with real work stored in a design/ folder. */
+  var DESIGN = [
+    { name: 'Event horizon', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132054_2f0efd01-bf01-441f-a06c-f9e5c9599106.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132054_2f0efd01-bf01-441f-a06c-f9e5c9599106.png', note: 'Example image, generated with Higgsfield.' },
+    { name: 'Prime spiral', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132051_3341ec5a-05e3-4a12-b9e5-6c010c3f32a2.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132051_3341ec5a-05e3-4a12-b9e5-6c010c3f32a2.png', note: 'Example image, generated with Higgsfield.' },
+    { name: 'Hidden dimensions', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_46c70ec6-aabe-4d68-8407-340ef046b811.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_46c70ec6-aabe-4d68-8407-340ef046b811.png', note: 'Example image, generated with Higgsfield.' },
+    { name: 'Cosmic web', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132049_4fae9597-b2f0-48b7-aa41-c321d3aa8ac4.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132049_4fae9597-b2f0-48b7-aa41-c321d3aa8ac4.png', note: 'Example image, generated with Higgsfield.' },
+    { name: 'Edge of the set', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_c1aff796-5608-4518-9601-8fd747602891.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_c1aff796-5608-4518-9601-8fd747602891.png', note: 'Example image, generated with Higgsfield.' },
+    { name: 'Instrument for four dimensions', type: 'Example', img: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_ba7f7893-3800-473b-a210-19ffb456108d.png', href: 'https://d8j0ntlcm91z4.cloudfront.net/user_3GJIhrwtWFSPAV3eeV7sFGOCg5d/hf_20261110_132050_ba7f7893-3800-473b-a210-19ffb456108d.png', note: 'Example image, generated with Higgsfield.' }
+  ];
   /* To store a file, add a line here, e.g.
      { name: 'Portfolio 2026', type: 'PDF', date: '10/11/2026', size: '2.4 MB', href: 'files/portfolio-2026.pdf', note: 'One line about the file.' } */
   var ARCHIVE = [];
@@ -714,7 +729,8 @@ body{margin:0;background:#000}
   var arch = (function () {
     var el = document.getElementById('mm-arch'), cv = document.getElementById('mm-arch-c'), c = cv.getContext && cv.getContext('2d');
     var box = document.getElementById('mm-arch-files'), list = document.getElementById('mm-arch-list'), detail = document.getElementById('mm-arch-detail'), skip = document.getElementById('mm-arch-skip');
-    var W = 1, H = 1, DPR = 1, f = 500, cx = 0, cy = 0, raf = 0, on = false, t = 0, last = 0, docked = false, dimK = 0, fr = 0, from = null, S = null, lock = 0;
+    var W = 1, H = 1, DPR = 1, f = 500, cx = 0, cy = 0, raf = 0, on = false, t = 0, last = 0, docked = false, dimK = 0, fr = 0, from = null, S = null, lock = 0, hop = null, free = false, curN = 0, viewN = -1, lockN = 0, imgA = 0, FSL = {};
+    var cap = document.getElementById('mm-cap');
     var NEAR = 0.12, FOG = 105, cam = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 }, sy = 0, cyw = 1, sp = 0, cp = 1, A = [0, 0, 0], B = [0, 0, 0];
     var NBA = 10, bz = []; for (var i0 = 0; i0 < NBA; i0++) bz.push([]);
     var still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -811,7 +827,7 @@ body{margin:0;background:#000}
         for (i = 0; i < 18; i++) {
           z = 6 + i * 4.6; id = i + (s > 0 ? 40 : 0); d = Math.abs(z - cam.z);
           w = 1.2 + hsh(id) * 1.8; h = 1 + hsh(id * 2.3) * 1.5; yc = 2.3;
-          if (s > 0 && i === 16) { w = 3; h = 2; yc = 2.2; }
+          if (FSL[s + ':' + i] !== undefined) { w = 3; h = 2; yc = 2.2; }
           x = s * 7.97;
           RX(x, yc - h / 2, yc + h / 2, z - w / 2, z + w / 2, 1);
           if (d < 42) { RX(x, yc - h / 2 + 0.14, yc + h / 2 - 0.14, z - w / 2 + 0.14, z + w / 2 - 0.14, 0.5); L(x, yc - h / 2 - 0.35, z - 0.2, x, yc - h / 2 - 0.35, z + 0.2, 0.45); }
@@ -828,7 +844,8 @@ body{margin:0;background:#000}
       }
       if (lock > 0) {
         k = 1.5 * lock * (0.75 + 0.25 * Math.sin(time * 5));
-        RX(7.96, 1.2, 3.2, GE - 1.5, GE + 1.5, k); RX(7.96, 1.06, 3.34, GE - 1.64, GE + 1.64, k * 0.6);
+        s = slot(lockN); z = 6 + s.i * 4.6;
+        RX(s.s * 7.96, 1.2, 3.2, z - 1.5, z + 1.5, k); RX(s.s * 7.96, 1.06, 3.34, z - 1.64, z + 1.64, k * 0.6);
       }
       flush(g);
     }
@@ -959,8 +976,46 @@ body{margin:0;background:#000}
     });
     document.getElementById('mm-term-clr').addEventListener('click', function () { tmsg.value = ''; tout.textContent = ''; tmsg.focus(); });
 
+    /* ----- gallery: every entry has its own frame somewhere in the hall; choosing one flies there, up and over the partition walls ----- */
+    function slot(n) { return { s: n % 2 ? -1 : 1, i: (16 + n * 7) % 18 }; }
+    function la(a, b, k) { var d = (b - a + Math.PI) % (Math.PI * 2); if (d < 0) d += Math.PI * 2; return a + (d - Math.PI) * k; }
+    function flyTo(n) {
+      var sl = slot(n), tz = 6 + sl.i * 4.6, tx = sl.s * (8 - dockD), dx = tx - cam.x, dz = tz - cam.z, dist = Math.sqrt(dx * dx + dz * dz);
+      box.style.display = 'none'; cap.style.display = 'none';
+      if (n === curN && dist < 0.5) { arrive(n); return; }
+      free = true; curN = n; lockN = n; viewN = -1; skip.style.display = 'block';
+      hop = { n: n, t: 0, dur: Math.min(3.6, 1.6 + dist / 24), x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, x1: tx, z1: tz, a1: (sl.s * Math.PI) / 2, tr: Math.atan2(dx, dz), rise: dx * dx > 4 ? 1 : Math.min(1, Math.abs(dz) / 22) };
+      set('archStat', S.moving); set('archPos', '→ Frame ' + p2(n + 1));
+    }
+    function hopCam(p) {
+      var k = p * p * p * (p * (p * 6 - 15) + 10), up = Math.sin(Math.PI * k);
+      cam.x = hop.x0 + (hop.x1 - hop.x0) * k; cam.z = hop.z0 + (hop.z1 - hop.z0) * k; cam.y = hop.y0 + (2.2 - hop.y0) * k + 3.1 * hop.rise * up;
+      cam.yaw = la(la(hop.a0, hop.tr, sm(p / 0.38)), hop.a1, sm((p - 0.58) / 0.42)); cam.pitch = -0.3 * hop.rise * up;
+    }
+    function arrive(n) {
+      var it = S.items[n] || null, sl = slot(n), o = document.getElementById('mm-cap-o');
+      hop = null; curN = n; lockN = n; viewN = n; imgA = 0; skip.style.display = 'none';
+      set('archStat', 'Docked'); set('archPos', 'Frame ' + (sl.s > 0 ? 'E' : 'W') + '-' + p2(sl.i + 1));
+      document.getElementById('mm-cap-t').textContent = S.one + ' ' + p2(n + 1) + ' — ' + (it ? it.name : 'empty');
+      document.getElementById('mm-cap-m').textContent = it ? [it.type, it.date].filter(Boolean).join(' · ') + (it.note ? ' — ' + it.note : '') : S.none;
+      if (it && it.href) { o.href = it.href; o.style.display = 'inline-flex'; } else o.style.display = 'none';
+      cap.style.display = 'block';
+    }
+    function drawImg(g) {
+      var it = S.items[viewN], sl = slot(viewN), z = 6 + sl.i * 4.6, x = sl.s * 7.9, x0, y0, x1, y1, w, h, r, iw, ih;
+      if (!it || !it.im || !it.im.complete || !it.im.naturalWidth) return;
+      tf(x, 3.06, z - 1.36, A); tf(x, 1.34, z + 1.36, B); if (A[2] < 0.5 || B[2] < 0.5) return;
+      x0 = cx + f * A[0] / A[2]; y0 = cy - f * A[1] / A[2]; x1 = cx + f * B[0] / B[2]; y1 = cy - f * B[1] / B[2];
+      if (x1 < x0) { r = x0; x0 = x1; x1 = r; }
+      w = x1 - x0; h = y1 - y0; iw = it.im.naturalWidth; ih = it.im.naturalHeight; r = Math.min(w / iw, h / ih);
+      c.globalAlpha = Math.min(1, imgA * g); c.drawImage(it.im, x0 + (w - iw * r) / 2, y0 + (h - ih * r) / 2, iw * r, ih * r); c.globalAlpha = 1;
+    }
+    document.getElementById('mm-cap-p').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN - 1 + n) % n); });
+    document.getElementById('mm-cap-n').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
+    document.getElementById('mm-cap-l').addEventListener('click', function () { cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
+
     var SECT = {
-      '01': { title: '01 / Design', place: 'Frame G-17', moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
+      '01': { title: '01 / Design', place: 'Gallery hall', fly: true, moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
       '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 3.6, TURN: 1.1, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
       '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
     };
@@ -968,15 +1023,18 @@ body{margin:0;background:#000}
       if (!on) return;
       raf = requestAnimationFrame(frame);
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
-      if (docked && (fr++ % 3)) return;
+      if (docked && !hop && (fr++ % 3)) return;
       var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
-      S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
+      if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
       sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
-      lock = Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
+      lock = free ? 1 : Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
       if (!docked && t >= S.T + S.TURN) dock();
-      dimK += ((docked ? 1 : 0) - dimK) * Math.min(1, dt * (docked ? 12 : 3));
+      var dimT = docked && !hop && (!S.fly || box.style.display === 'block') ? 1 : 0;
+      dimK += (dimT - dimK) * Math.min(1, dt * 12);
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
       S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
+      if (S.fly && viewN >= 0 && !hop) { imgA = Math.min(1, imgA + dt * 5); drawImg(1 - 0.62 * dimK); }
+      if (hop && hop.t >= hop.dur) arrive(hop.n);
       if (!docked) {
         set('archStat', u < 1 ? S.moving : S.found);
         set('archPos', S.pos ? S.pos() : 'Z ' + (cam.z < 0 ? '−' : '+') + Math.abs(cam.z).toFixed(1) + ' M · ' + ((30 * u * u * (1 - u) * (1 - u) * S.dist) / S.T).toFixed(1) + ' M/S');
@@ -1000,7 +1058,7 @@ body{margin:0;background:#000}
       }
     }
     function build() {
-      list.textContent = ''; detail.textContent = S.hint;
+      list.textContent = ''; detail.textContent = S.hint; detail.style.minHeight = S.fly ? '0' : '74px';
       var n = Math.max(6, S.items.length), i;
       for (i = 0; i < n; i++) (function (i) {
         var it = S.items[i] || null, b = document.createElement('button'), a = document.createElement('span'), m = document.createElement('span'), r = document.createElement('span');
@@ -1009,7 +1067,7 @@ body{margin:0;background:#000}
         m.textContent = it ? it.name : S.empty; m.style.cssText = 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
         r.textContent = it ? (it.type || '') : '—'; r.style.cssText = 'flex:none;font-size:10px;color:rgba(255,255,255,.5)';
         b.appendChild(a); b.appendChild(m); b.appendChild(r);
-        b.addEventListener('click', function () { pick(b, it, i + 1); });
+        b.addEventListener('click', function () { if (S.fly) flyTo(i); else pick(b, it, i + 1); });
         list.appendChild(b);
       })(i);
       set('archCount', S.items.length + ' / ' + n + ' ' + S.count);
@@ -1018,6 +1076,7 @@ body{margin:0;background:#000}
       docked = true; t = Math.max(t, S.T + S.TURN); skip.style.display = 'none';
       set('archStat', 'Docked'); set('archPos', S.place);
       if (S.term) { termOpen(); return; }
+      if (S.fly) { viewN = 0; imgA = 0; set('archPos', 'Frame E-17'); }
       build(); box.style.display = 'block'; box.classList.add('mm-panel');
       var b = list.querySelector('button'); if (b) b.focus();
     }
@@ -1029,7 +1088,9 @@ body{margin:0;background:#000}
     function open(b) {
       var sc = SECT[b.getAttribute('data-idx')];
       if (!c || on || !sc) return;
-      S = sc; from = b; on = true; docked = false; dimK = 0; t = still ? S.T + S.TURN : 0; last = 0; fr = 0;
+      S = sc; from = b; on = true; docked = false; hop = null; free = false; curN = 0; viewN = -1; lockN = 0; cap.style.display = 'none'; FSL = {};
+      if (S.fly) { for (var n0 = Math.max(6, S.items.length) - 1; n0 >= 0; n0--) { var sl0 = slot(n0); FSL[sl0.s + ':' + sl0.i] = n0; } S.items.forEach(function (it) { if (it.img && !it.im) { it.im = new Image(); it.im.src = it.img; } }); }
+      dimK = 0; t = still ? S.T + S.TURN : 0; last = 0; fr = 0;
       set('runTitle', S.title); set('runPlace', S.place); set('archStat', ''); set('archPos', ''); box.setAttribute('aria-label', S.label);
       box.style.display = 'none'; term.style.display = 'none'; bLast = 0; CL.length = 0; skip.style.display = still ? 'none' : 'block';
       el.style.display = 'block'; el.style.animation = 'mm-fade .45s ease both';
@@ -1041,7 +1102,7 @@ body{margin:0;background:#000}
       on = false; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
       if (from) from.focus();
     }
-    cv.addEventListener('pointerdown', function () { if (on && !docked && t > 0.3) t = S.T + S.TURN; });
+    cv.addEventListener('pointerdown', function () { if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN; });
     document.getElementById('mm-arch-x').addEventListener('click', close);
     window.addEventListener('resize', function () { if (on) size(); });
     return { open: open, close: close, has: function (idx) { return !!c && !!SECT[idx]; } };
