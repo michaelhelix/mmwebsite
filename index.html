@@ -470,6 +470,7 @@ body{margin:0;background:#000}
       formT += dt;
       var target = lock >= 0 ? lock : (!reduce && formT > HOLD ? (cur + 1) % FORMS.length : cur);
       if (target !== cur) trans = { from: cur, to: target, t: 0, told: false, m: buildMorph(cur, target), dur: Math.max(FORMS[cur].g.E.length, FORMS[target].g.E.length) > 100 ? 4.4 : 3.6 };
+      if (trans && !trans.sig) { trans.sig = true; if (opts.onMorph) opts.onMorph(); }
     }
     if (trans) {
       trans.t += dt;
@@ -536,7 +537,56 @@ body{margin:0;background:#000}
   var FORMS = [['DODECAHEDRON', '{5,3}'], ['TESSERACT', '{4,3,3}'], ['ICOSAHEDRON', '{3,5}'], ['24-CELL', '{3,4,3}'], ['600-CELL', '{3,3,5}']];
   function set(k, v) { var els = document.querySelectorAll('[data-mm="' + k + '"]'); for (var i = 0; i < els.length; i++) els[i].textContent = v; }
   function p2(n) { return (n < 10 ? '0' : '') + n; }
-  var engine = mmEngine(canvas, stage, { onForm: function (i) { set('formNo', p2(i + 1)); set('formName', FORMS[i][0]); set('formSym', FORMS[i][1]); } });
+  /* ---------- the name: each letter folds into the polygon with as many sides as it has strokes, then unfolds ---------- */
+  var glyphs = [], nameT0 = 0, nameOn = false, pageT0 = Date.now();
+  function ez(t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  [].forEach.call(document.querySelectorAll('h1 svg path'), function (p) {
+    var d = p.getAttribute('d'), tok = d.match(/[ML]|-?[\d.]+/g), segs = [], cur = null, i = 0, c, x, y, lo = 1e9, hi = -1e9;
+    while (i < tok.length) { c = tok[i++]; x = +tok[i++]; y = +tok[i++]; if (c === 'L') segs.push([cur[0], cur[1], x, y]); cur = [x, y]; if (x < lo) lo = x; if (x > hi) hi = x; }
+    var n = Math.min(6, Math.max(3, segs.length)), gx = (lo + hi) / 2, L, b, q, TAU = Math.PI * 2;
+    while (segs.length < 3) {
+      b = 0; L = -1;
+      for (i = 0; i < segs.length; i++) { q = Math.abs(segs[i][2] - segs[i][0]) + Math.abs(segs[i][3] - segs[i][1]); if (q > L) { L = q; b = i; } }
+      q = segs[b]; x = (q[0] + q[2]) / 2; y = (q[1] + q[3]) / 2;
+      segs.splice(b, 1, [q[0], q[1], x, y], [x, y, q[2], q[3]]);
+    }
+    segs.forEach(function (g) { g.a = (Math.atan2((g[1] + g[3]) / 2 - 50, (g[0] + g[2]) / 2 - gx) + Math.PI / 2 + TAU) % TAU; });
+    segs.sort(function (u, v) { return u.a - v.a; });
+    segs.forEach(function (g, k) {
+      g.e = Math.floor((k * n) / segs.length);
+      var a0 = -Math.PI / 2 + (g.e * TAU) / n, a1 = a0 + TAU / n;
+      var x0 = gx + Math.cos(a0) * 32, y0 = 50 + Math.sin(a0) * 32, x1 = gx + Math.cos(a1) * 32, y1 = 50 + Math.sin(a1) * 32;
+      g.f = Math.pow(g[0] - x1, 2) + Math.pow(g[1] - y1, 2) + Math.pow(g[2] - x0, 2) + Math.pow(g[3] - y0, 2) < Math.pow(g[0] - x0, 2) + Math.pow(g[1] - y0, 2) + Math.pow(g[2] - x1, 2) + Math.pow(g[3] - y1, 2);
+    });
+    glyphs.push({ p: p, d: d, segs: segs, n: n, x: gx, live: false });
+  });
+  function nameFrame(now) {
+    var t = (now - nameT0) / 1000, done = true, TAU = Math.PI * 2, i, j, g, lt, w, a0, a1, q, s, x0, y0, x1, y1, d;
+    for (i = 0; i < glyphs.length; i++) {
+      g = glyphs[i]; lt = t - i * 0.09;
+      if (lt < 2.7) done = false;
+      w = lt <= 0 ? 0 : lt < 1.7 ? ez(lt / 0.9) : 1 - ez((lt - 1.7) / 0.9);
+      if (w <= 0) { if (g.live) { g.p.setAttribute('d', g.d); g.live = false; } continue; }
+      d = '';
+      for (j = 0; j < g.segs.length; j++) {
+        s = g.segs[j];
+        a0 = -Math.PI / 2 + lt * 0.8 + (s.e * TAU) / g.n; a1 = a0 + TAU / g.n;
+        if (s.f) { q = a0; a0 = a1; a1 = q; }
+        x0 = s[0] + (g.x + Math.cos(a0) * 32 - s[0]) * w; y0 = s[1] + (50 + Math.sin(a0) * 32 - s[1]) * w;
+        x1 = s[2] + (g.x + Math.cos(a1) * 32 - s[2]) * w; y1 = s[3] + (50 + Math.sin(a1) * 32 - s[3]) * w;
+        d += 'M' + x0.toFixed(1) + ',' + y0.toFixed(1) + ' L' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' ';
+      }
+      if (!g.live) { g.live = true; g.p.style.animation = 'none'; g.p.style.strokeDasharray = 'none'; g.p.style.strokeDashoffset = '0'; }
+      g.p.setAttribute('d', d);
+    }
+    if (done) nameOn = false; else requestAnimationFrame(nameFrame);
+  }
+  function morphName() {
+    if (nameOn || Date.now() - pageT0 < 4600) return;
+    nameOn = true; nameT0 = performance.now(); requestAnimationFrame(nameFrame);
+  }
+  var h1 = document.querySelector('h1'); if (h1) h1.addEventListener('click', morphName);
+  var engine = mmEngine(canvas, stage, { onMorph: morphName, onForm: function (i) { set('formNo', p2(i + 1)); set('formName', FORMS[i][0]); set('formSym', FORMS[i][1]); } });
   var t0 = Date.now();
   function tick() {
     var d = new Date(), up = Math.floor((Date.now() - t0) / 1000);
