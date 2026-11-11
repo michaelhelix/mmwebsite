@@ -68,7 +68,7 @@ body{margin:0;background:#000}
 <div class="mm-fade" aria-hidden="true" style="position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1px solid rgba(255,255,255,.4);border-right:1px solid rgba(255,255,255,.4);pointer-events:none;animation-delay:2.4s"></div>
 <header style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,3vw,32px) clamp(20px,4vw,44px) 0;font-size:10px;letter-spacing:.22em;line-height:1.9;color:rgba(255,255,255,.55);text-transform:uppercase">
 <div class="mm-fade" style="animation-delay:2.6s">
-<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.4</span></div>
+<div style="color:#fff">MM—SYS <span style="color:rgba(255,255,255,.55)">v0.5</span></div>
 <div>Local <span data-mm="clock"></span></div>
 <div>Sol <span data-mm="sol"></span></div>
 <div>Luna <span data-mm="luna"></span></div>
@@ -137,7 +137,7 @@ body{margin:0;background:#000}
 <div style="display:inline-flex;flex-direction:column;gap:9px;align-items:center;max-width:100%;pointer-events:auto">
 <div id="mm-cap-t" style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#fff"></div>
 <div id="mm-cap-m" style="font-size:11px;line-height:1.6;color:rgba(255,255,255,.65)"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button type="button" class="mm-btn" id="mm-cap-p" style="background:rgba(0,0,0,.6)">[ Prev ]</button><button type="button" class="mm-btn" id="mm-cap-l" style="background:rgba(0,0,0,.6)">[ Frames ]</button><button type="button" class="mm-btn" id="mm-cap-n" style="background:rgba(0,0,0,.6)">[ Next ]</button><a class="mm-btn" id="mm-cap-o" target="_blank" rel="noopener" style="display:none;text-decoration:none;background:rgba(0,0,0,.6)">[ Open ]</a></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button type="button" class="mm-btn" id="mm-cap-p" style="background:rgba(0,0,0,.6)">[ Prev ]</button><button type="button" class="mm-btn" id="mm-cap-l" style="background:rgba(0,0,0,.6)">[ Frames ]</button><button type="button" class="mm-btn" id="mm-cap-n" style="background:rgba(0,0,0,.6)">[ Next ]</button><button type="button" class="mm-btn" id="mm-cap-e" style="display:none;background:rgba(0,0,0,.6)"></button><a class="mm-btn" id="mm-cap-o" target="_blank" rel="noopener" style="display:none;text-decoration:none;background:rgba(0,0,0,.6)">[ Open ]</a></div>
 </div>
 </div>
 <div id="mm-arch-skip" style="position:absolute;left:0;right:0;bottom:clamp(20px,5vh,40px);text-align:center;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.45);text-transform:uppercase;pointer-events:none">Tap to skip</div>
@@ -731,7 +731,7 @@ body{margin:0;background:#000}
     var box = document.getElementById('mm-arch-files'), list = document.getElementById('mm-arch-list'), detail = document.getElementById('mm-arch-detail'), skip = document.getElementById('mm-arch-skip');
     var W = 1, H = 1, DPR = 1, f = 500, cx = 0, cy = 0, raf = 0, on = false, t = 0, last = 0, docked = false, dimK = 0, fr = 0, from = null, S = null, lock = 0, hop = null, free = false, curN = 0, viewN = -1, lockN = 0, imgA = 0, FSL = {};
     var cap = document.getElementById('mm-cap');
-    var NEAR = 0.12, FOG = 105, cam = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 }, sy = 0, cyw = 1, sp = 0, cp = 1, A = [0, 0, 0], B = [0, 0, 0];
+    var NEAR = 0.12, FOG = 105, TAU2 = Math.PI * 2, ent = null, blk = 0, cam = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 }, sy = 0, cyw = 1, sp = 0, cp = 1, A = [0, 0, 0], B = [0, 0, 0];
     var NBA = 10, bz = []; for (var i0 = 0; i0 < NBA; i0++) bz.push([]);
     var still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     function wa(a) { return 'rgba(255,255,255,' + (a < 0 ? 0 : a > 1 ? 1 : a).toFixed(3) + ')'; }
@@ -955,7 +955,7 @@ body{margin:0;background:#000}
     }
     var term = document.getElementById('mm-term'), thead = document.getElementById('mm-term-head'), tfrom = document.getElementById('mm-term-from'), tmsg = document.getElementById('mm-term-msg'), tout = document.getElementById('mm-term-out'), typer = 0;
     function termOpen() {
-      var txt = 'MM-SYS TERMINAL 0.4 / CHANNEL 04\nUPLINK: ' + (CONTACT.endpoint || CONTACT.mailto ? 'READY' : 'OFFLINE - THIS CHANNEL IS NOT OPEN YET') + '\nWRITE YOUR MESSAGE BELOW.', i = 0;
+      var txt = 'MM-SYS TERMINAL 0.5 / CHANNEL 04\nUPLINK: ' + (CONTACT.endpoint || CONTACT.mailto ? 'READY' : 'OFFLINE - THIS CHANNEL IS NOT OPEN YET') + '\nWRITE YOUR MESSAGE BELOW.', i = 0;
       term.style.display = 'block'; tout.textContent = ''; thead.textContent = ''; clearInterval(typer);
       typer = setInterval(function () { i += 2; thead.textContent = txt.slice(0, i); if (i >= txt.length) clearInterval(typer); }, 16);
       tfrom.focus();
@@ -979,28 +979,32 @@ body{margin:0;background:#000}
     /* ----- gallery: every entry has its own frame somewhere in the hall; choosing one flies there, up and over the partition walls ----- */
     function slot(n) { return { s: n % 2 ? -1 : 1, i: (16 + n * 7) % 18 }; }
     function la(a, b, k) { var d = (b - a + Math.PI) % (Math.PI * 2); if (d < 0) d += Math.PI * 2; return a + (d - Math.PI) * k; }
+    function galPose(n) { var sl = slot(n); return { x: sl.s * (8 - dockD), y: 2.2, z: 6 + sl.i * 4.6, yaw: (sl.s * Math.PI) / 2, tag: 'Frame ' + (sl.s > 0 ? 'E' : 'W') + '-' + p2(sl.i + 1) }; }
     function flyTo(n) {
-      var sl = slot(n), tz = 6 + sl.i * 4.6, tx = sl.s * (8 - dockD), dx = tx - cam.x, dz = tz - cam.z, dist = Math.sqrt(dx * dx + dz * dz);
+      var P = S.pose(n), dx = P.x - cam.x, dz = P.z - cam.z, dist = Math.sqrt(dx * dx + dz * dz);
       box.style.display = 'none'; cap.style.display = 'none';
       if (n === curN && dist < 0.5) { arrive(n); return; }
       free = true; curN = n; lockN = n; viewN = -1; skip.style.display = 'block';
-      hop = { n: n, t: 0, dur: Math.min(3.6, 1.6 + dist / 24), x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, x1: tx, z1: tz, a1: (sl.s * Math.PI) / 2, tr: Math.atan2(dx, dz), rise: dx * dx > 4 ? 1 : Math.min(1, Math.abs(dz) / 22) };
-      set('archStat', S.moving); set('archPos', '→ Frame ' + p2(n + 1));
+      hop = { n: n, t: 0, dur: Math.min(S.hopMax || 3.6, 1.6 + dist / (S.hopV || 24)), x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, x1: P.x, y1: P.y, z1: P.z, a1: P.yaw, tr: Math.atan2(dx, dz), rise: S.riseAll ? Math.min(1, dist / S.riseAll) : dx * dx > 4 ? 1 : Math.min(1, Math.abs(dz) / 22) };
+      set('archStat', S.moving); set('archPos', '→ ' + S.one + ' ' + p2(n + 1));
     }
     function hopCam(p) {
-      var k = p * p * p * (p * (p * 6 - 15) + 10), up = Math.sin(Math.PI * k);
-      cam.x = hop.x0 + (hop.x1 - hop.x0) * k; cam.z = hop.z0 + (hop.z1 - hop.z0) * k; cam.y = hop.y0 + (2.2 - hop.y0) * k + 3.1 * hop.rise * up;
-      cam.yaw = la(la(hop.a0, hop.tr, sm(p / 0.38)), hop.a1, sm((p - 0.58) / 0.42)); cam.pitch = -0.3 * hop.rise * up;
+      var k = p * p * p * (p * (p * 6 - 15) + 10), up = S.flat ? 1 - Math.pow(2 * k - 1, 4) : Math.sin(Math.PI * k);
+      cam.x = hop.x0 + (hop.x1 - hop.x0) * k; cam.z = hop.z0 + (hop.z1 - hop.z0) * k; cam.y = hop.y0 + (hop.y1 - hop.y0) * k + (S.arc || 3.1) * hop.rise * up;
+      cam.yaw = S.direct ? la(hop.a0, hop.a1, sm(p)) : la(la(hop.a0, hop.tr, sm(p / 0.38)), hop.a1, sm((p - 0.58) / 0.42));
+      cam.pitch = -(S.dip || 0.3) * hop.rise * Math.sin(Math.PI * k);
     }
     function arrive(n) {
-      var it = S.items[n] || null, sl = slot(n), o = document.getElementById('mm-cap-o');
+      var it = S.items[n] || null, o = document.getElementById('mm-cap-o'), e = document.getElementById('mm-cap-e');
       hop = null; curN = n; lockN = n; viewN = n; imgA = 0; skip.style.display = 'none';
-      set('archStat', 'Docked'); set('archPos', 'Frame ' + (sl.s > 0 ? 'E' : 'W') + '-' + p2(sl.i + 1));
-      document.getElementById('mm-cap-t').textContent = S.one + ' ' + p2(n + 1) + ' — ' + (it ? it.name : 'empty');
+      set('archStat', 'Docked'); set('archPos', S.pose(n).tag);
+      document.getElementById('mm-cap-t').textContent = S.one + ' ' + p2(n + 1) + ' — ' + (it ? it.name : S.emptyWord || 'empty');
       document.getElementById('mm-cap-m').textContent = it ? [it.type, it.date].filter(Boolean).join(' · ') + (it.note ? ' — ' + it.note : '') : S.none;
       if (it && it.href) { o.href = it.href; o.style.display = 'inline-flex'; } else o.style.display = 'none';
+      if (S.eLabel && (S.eAlways || (it && it.room))) { e.textContent = '[ ' + S.eLabel + ' ]'; e.style.display = 'inline-flex'; } else e.style.display = 'none';
       cap.style.display = 'block';
     }
+    document.getElementById('mm-cap-e').addEventListener('click', function () { if (S.onE) S.onE(); });
     function drawImg(g) {
       var it = S.items[viewN], sl = slot(viewN), z = 6 + sl.i * 4.6, x = sl.s * 7.9, x0, y0, x1, y1, w, h, r, iw, ih;
       if (!it || !it.im || !it.im.complete || !it.im.naturalWidth) return;
@@ -1014,8 +1018,131 @@ body{margin:0;background:#000}
     document.getElementById('mm-cap-n').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
     document.getElementById('mm-cap-l').addEventListener('click', function () { cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
 
+    /* ----- 02: a wasteland with six pyramids, one per project ----- */
+    /* A project gets a pyramid by adding a line here; room: true means the pyramid can be entered. */
+    var PROJECTS = [{ name: 'Bottles', type: 'Project 01', note: 'A chamber with six bottle designs.', room: true }];
+    var PYR = [[0, 150, 60], [-110, 230, 44], [95, 265, 50], [-60, 365, 70], [150, 410, 40], [20, 490, 56]], DS = { x: -70, y: 46, z: -150 };
+    function dune(x, z) { return 1.1 * Math.sin(x * 0.045 + 1.3) * Math.sin(z * 0.038) + 0.5 * Math.sin(x * 0.11 + z * 0.07); }
+    function desPose(n) { var P = PYR[n % PYR.length]; return { x: P[0], y: 3.2, z: P[1] - P[2] * 0.95, yaw: 0, tag: 'Pyramid ' + p2(n + 1) }; }
+    function desCam(k) {
+      var P = desPose(0);
+      cam.x = DS.x + (P.x - DS.x) * k; cam.z = DS.z + (P.z - DS.z) * k; cam.y = DS.y + (P.y - DS.y) * (1 - Math.pow(1 - k, 1.6));
+      cam.pitch = -0.3 * Math.pow(1 - k, 1.4); cam.yaw = Math.atan2(PYR[0][0] - cam.x, PYR[0][1] - cam.z);
+    }
+    function grid(step, n, al) {
+      var x0 = Math.round(cam.x / step) * step, z0 = Math.round(cam.z / step) * step, i, j, x, z, d, a, R = step * n;
+      for (i = -n; i <= n; i++) for (j = -n; j < n; j++) {
+        x = x0 + i * step; z = z0 + j * step; d = Math.sqrt((x - cam.x) * (x - cam.x) + (z + step / 2 - cam.z) * (z + step / 2 - cam.z)) / R; a = al * (1 - d);
+        if (a > 0.02) L(x, dune(x, z), z, x, dune(x, z + step), z + step, a);
+        x = x0 + j * step; z = z0 + i * step; d = Math.sqrt((x + step / 2 - cam.x) * (x + step / 2 - cam.x) + (z - cam.z) * (z - cam.z)) / R; a = al * (1 - d);
+        if (a > 0.02) L(x, dune(x, z), z, x + step, dune(x + step, z), z, a);
+      }
+    }
+    function desScene(time, g) {
+      var i, k, P, b, h, x, z, q, zs, a, d, hz;
+      hz = cy + f * Math.tan(cam.pitch); c.strokeStyle = wa(0.3 * g); c.lineWidth = 1; c.beginPath(); c.moveTo(0, hz); c.lineTo(W, hz); c.stroke();
+      tf(cam.x + 520, cam.y + 150, cam.z + 2400, A); /* a low sun, far to the north-east */
+      if (A[2] > 1) { x = cx + f * A[0] / A[2]; z = cy - f * A[1] / A[2]; q = f * 0.075; c.strokeStyle = wa(0.55 * g); c.beginPath(); c.arc(x, z, q, 0, TAU2); c.stroke(); c.beginPath(); for (i = 1; i < 6; i++) { d = q * (i / 6); a = Math.sqrt(q * q - d * d); c.moveTo(x - a, z + d); c.lineTo(x + a, z + d); } c.stroke(); }
+      if (cam.y < 30) grid(8, 8, 0.5 * (1 - cam.y / 30));
+      grid(32, 9, 0.4);
+      for (i = 0; i < PYR.length; i++) {
+        P = PYR[i]; b = P[2] / 2; h = P[2] * 0.64; x = P[0]; z = P[1]; k = lock > 0 && i === lockN ? 1 + 0.5 * lock * (0.75 + 0.25 * Math.sin(time * 4)) : 1;
+        RY(0, x - b, x + b, z - b, z + b, 0.8 * k);
+        L(x - b, 0, z - b, x, h, z, k); L(x + b, 0, z - b, x, h, z, k); L(x - b, 0, z + b, x, h, z, k); L(x + b, 0, z + b, x, h, z, k);
+        d = Math.sqrt((x - cam.x) * (x - cam.x) + (z - cam.z) * (z - cam.z));
+        if (d < 340) for (q = 1; q < 9; q++) RY(h * q / 9, x - b * (1 - q / 9), x + b * (1 - q / 9), z - b * (1 - q / 9), z + b * (1 - q / 9), q === 8 ? 0.7 : 0.32);
+        zs = z - b; a = 6 * b / h; /* doorway on the south face, leaning with the slope */
+        L(x - 2.4, 0, zs, x - 2, 6, zs + a, k); L(x + 2.4, 0, zs, x + 2, 6, zs + a, k); L(x - 2, 6, zs + a, x + 2, 6, zs + a, k);
+        if (PROJECTS[i] && PROJECTS[i].room) { L(x - 2.4, 0, zs, x - 1.2, 0, zs + 22, 0.6); L(x + 2.4, 0, zs, x + 1.2, 0, zs + 22, 0.6); L(x - 2, 6, zs + a, x - 1.2, 4, zs + 22, 0.6); L(x + 2, 6, zs + a, x + 1.2, 4, zs + 22, 0.6); RZ(zs + 22, x - 1.2, x + 1.2, 0, 4, 0.5); RZ(zs + 11, x - 1.8, x + 1.8, 0, 5, 0.4); }
+        else { L(x - 2.3, 0.4, zs + 0.3, x + 2, 5.7, zs + a, 0.5); L(x + 2.3, 0.4, zs + 0.3, x - 2, 5.7, zs + a, 0.5); }
+      }
+      for (i = 0; i < 70; i++) { /* shards and broken columns */
+        x = (hsh(i * 3.1) * 2 - 1) * 240; z = -160 + hsh(i * 7.7) * 720; if (Math.abs(x - cam.x) > 150 || Math.abs(z - cam.z) > 150) continue;
+        q = 0.8 + hsh(i * 1.9) * 3.2; h = dune(x, z) - 0.2;
+        if (i % 6 === 0) { BOX(x - 0.9, x + 0.9, h + 3 + q * 1.6, z - 0.9, z + 0.9, 0.6); continue; }
+        a = hsh(i * 5.3) * TAU2;
+        for (k = 0; k < 3; k++) { d = a + k * 2.094; b = a + (k + 1) * 2.094; L(x + q * Math.cos(d), h, z + q * Math.sin(d), x + q * Math.cos(b), h, z + q * Math.sin(b), 0.6); L(x + q * Math.cos(d), h, z + q * Math.sin(d), x + q * 0.3, h + q * 1.7, z, 0.6); }
+      }
+      flush(g);
+      for (i = 0; i < 60; i++) { x = cam.x + ((hsh(i * 2.3) * 160 + time * (5 + hsh(i) * 6)) % 160) - 80; z = cam.z + ((hsh(i * 4.1) * 160 + time * 2) % 160) - 60; dot(x, 0.5 + hsh(i * 9.7) * 9, z, 0.5, g); }
+    }
+    function RY(y, x0, x1, z0, z1, a) { L(x0, y, z0, x1, y, z0, a); L(x0, y, z1, x1, y, z1, a); L(x0, y, z0, x0, y, z1, a); L(x1, y, z0, x1, y, z1, a); }
+
+    /* ----- inside pyramid 01: a chamber with six bottles, each a rotating line sculpture ----- */
+    function sph(yc, R, n, a0, a1) { var o = [], i, th; for (i = 0; i <= n; i++) { th = a0 + ((a1 - a0) * i) / n; o.push([R * Math.sin(th), yc - R * Math.cos(th)]); } return o; }
+    function mkB(parts) {
+      parts.forEach(function (p) {
+        if (p.tw) { var o = [], i, j, a, b, n; for (i = 0; i < p.pts.length - 1; i++) { a = p.pts[i]; b = p.pts[i + 1]; n = Math.max(1, Math.ceil(Math.abs(b[1] - a[1]) / 0.06)); for (j = 0; j < n; j++) o.push([a[0] + ((b[0] - a[0]) * j) / n, a[1] + ((b[1] - a[1]) * j) / n]); } o.push(p.pts[p.pts.length - 1]); p.pts = o; }
+        p.y0 = p.pts[0][1]; p.y1 = p.pts[p.pts.length - 1][1];
+      });
+      return parts;
+    }
+    function strata() { var o = [], r = [0.3, 0.27, 0.24, 0.21, 0.18, 0.15], i, y; for (i = 0; i < 6; i++) { y = i * 0.105; o.push([r[i] * 0.55, y], [r[i], y], [r[i], y + 0.07], [r[i] * 0.55, y + 0.07]); } return o.concat([[0.05, 0.64], [0.05, 0.76], [0.13, 0.76], [0.13, 0.8], [0.05, 0.8], [0.05, 0.85], [0.09, 0.85], [0.09, 0.92], [0, 0.92]]); }
+    var BOTTLES = [
+      { name: 'Obelisk', type: 'Line study', note: 'A four-sided taper under a pyramid stopper.' },
+      { name: 'Orbit', type: 'Line study', note: 'A sphere held inside a ring.' },
+      { name: 'Helix', type: 'Line study', note: 'A six-sided column twisted along its height.' },
+      { name: 'Amphora', type: 'Line study', note: 'A teardrop body on a narrow foot.' },
+      { name: 'Strata', type: 'Line study', note: 'Six stacked discs, each smaller than the last.' },
+      { name: 'Trine', type: 'Line study', note: 'A triangular flask with a counter-turned core.' }
+    ];
+    var BOT = [
+      mkB([{ m: 4, pts: [[0.21, 0], [0.23, 0.03], [0.17, 0.7], [0.065, 0.75], [0.065, 0.86], [0.1, 0.87], [0.1, 0.91]] }, { m: 4, pts: [[0.1, 0.91], [0, 1.18]] }, { m: 4, a: 0.45, pts: [[0, 0.05], [0.19, 0.05], [0.155, 0.5], [0, 0.5]] }]),
+      mkB([{ m: 14, pts: sph(0.32, 0.3, 9, 0.38, 2.93) }, { m: 14, pts: [[0.06, 0.61], [0.06, 0.72], [0.09, 0.73], [0.09, 0.76]] }, { m: 10, pts: sph(0.85, 0.09, 5, 0, Math.PI) }, { m: 28, pts: [[0.42, 0.32], [0.45, 0.32]] }, { m: 14, a: 0.4, pts: sph(0.32, 0.25, 5, 0.3, 1.75).concat([[0, 0.365]]) }]),
+      mkB([{ m: 6, tw: 2.2, pts: [[0.19, 0], [0.19, 0.7]] }, { m: 6, off: 2.2, pts: [[0.19, 0.7], [0.06, 0.78], [0.06, 0.88]] }, { m: 6, off: 2.2, tw: 1.2, pts: [[0.06, 0.88], [0.12, 0.97], [0, 1.18]] }, { m: 6, tw: -2.2, a: 0.4, pts: [[0.12, 0.04], [0.12, 0.52]] }]),
+      mkB([{ m: 12, pts: [[0.06, 0], [0.11, 0.02], [0.11, 0.05], [0.05, 0.08], [0.14, 0.16], [0.26, 0.3], [0.29, 0.42], [0.25, 0.56], [0.14, 0.7], [0.07, 0.8], [0.06, 0.9], [0.1, 0.92]] }, { m: 12, pts: [[0.05, 0.92], [0.09, 1], [0.04, 1.1], [0, 1.18]] }, { m: 12, a: 0.4, pts: [[0, 0.18], [0.12, 0.18], [0.22, 0.32], [0.24, 0.44], [0, 0.44]] }]),
+      mkB([{ m: 16, pts: strata() }]),
+      mkB([{ m: 3, pts: [[0.27, 0], [0.27, 0.03], [0.22, 0.68], [0.07, 0.76], [0.07, 0.88]] }, { m: 3, off: 1.047, a: 0.5, pts: [[0, 0.06], [0.17, 0.06], [0.15, 0.56], [0, 0.56]] }, { m: 3, off: 1.047, pts: [[0.07, 0.88], [0.13, 0.94], [0, 1.16]] }])
+    ];
+    var BP = [], bA = new Float32Array(64), bB = new Float32Array(64);
+    for (var bi0 = 0; bi0 < 6; bi0++) BP.push([6 * Math.sin(((-62.5 + bi0 * 25) * Math.PI) / 180), 7 + 6.5 * Math.cos(((-62.5 + bi0 * 25) * Math.PI) / 180)]);
+    function bottle(parts, bx, by, bz, rot, al, full) {
+      var pi, p, j, k, n, m, r, y, py = 0, ang, a, cur = bA, prv = bB, sw;
+      for (pi = 0; pi < parts.length; pi++) {
+        p = parts[pi]; if (p.a && !full) continue; m = p.m; a = al * (p.a || 1);
+        for (j = 0; j < p.pts.length; j++) {
+          r = p.pts[j][0]; y = by + p.pts[j][1]; ang = rot + (p.off || 0) + (p.tw ? (p.tw * (p.pts[j][1] - p.y0)) / (p.y1 - p.y0 || 1) : 0);
+          for (k = 0; k < m; k++) { cur[k * 2] = bx + r * Math.cos(ang + (TAU2 * k) / m); cur[k * 2 + 1] = bz + r * Math.sin(ang + (TAU2 * k) / m); }
+          for (k = 0; k < m; k++) {
+            n = (k + 1) % m;
+            if (r > 0.004) L(cur[k * 2], y, cur[k * 2 + 1], cur[n * 2], y, cur[n * 2 + 1], a);
+            if (j > 0 && (m < 10 || k % 2 === 0)) L(prv[k * 2], py, prv[k * 2 + 1], cur[k * 2], y, cur[k * 2 + 1], a * 0.8);
+          }
+          sw = prv; prv = cur; cur = sw; py = y;
+        }
+      }
+    }
+    function roomPose(n) { var b = BP[n % 6], dx = -b[0], dz = 5.5 - b[1], d = Math.sqrt(dx * dx + dz * dz), x = b[0] + (dx / d) * 2.05, z = b[1] + (dz / d) * 2.05; return { x: x, y: 1.3, z: z, yaw: Math.atan2(b[0] - x, b[1] - z), tag: 'Plinth ' + p2(n + 1) }; }
+    function roomCam(k) { cam.x = 0; cam.y = 1.7 + 0.7 * k; cam.z = 0.6 + 2 * k; cam.yaw = 0; cam.pitch = -0.06 * k; }
+    function roomScene(time, g) {
+      var i, y, z, x, s, b, sel;
+      for (s = -1; s <= 1; s += 2) {
+        LZ(s * 8, 0, 0, 18, 0.8, 3); LZ(s * 8, 6, 0, 18, 0.8, 3); L(s * 8, 0, 0, s * 8, 6, 0, 0.7); L(s * 8, 0, 18, s * 8, 6, 18, 0.7);
+        for (y = 1.5; y < 6; y += 1.5) { LZ(s * 8, y, 0, 18, 0.28, 3); for (z = (y % 3 ? 1.5 : 3); z < 18; z += 3) L(s * 8, y - 1.5, z, s * 8, y, z, 0.22); }
+      }
+      L(-8, 0, 18, 8, 0, 18, 0.8); L(-8, 6, 18, 8, 6, 18, 0.8); L(-8, 0, 0, 8, 0, 0, 0.6); L(-8, 6, 0, 8, 6, 0, 0.6); RZ(0, -2, 2, 0, 5, 0.6);
+      for (y = 1.5; y < 6; y += 1.5) { L(-8, y, 18, 8, y, 18, 0.28); for (x = (y % 3 ? -6.5 : -5); x < 8; x += 3) L(x, y - 1.5, 18, x, y, 18, 0.22); }
+      for (i = 1; i < 4; i++) { RY(6 + i * 0.95, -8 + i * 1.6, 8 - i * 1.6, i * 1.6, 18 - i * 1.6, 0.6); L(-8 + (i - 1) * 1.6, 6 + (i - 1) * 0.95, (i - 1) * 1.6, -8 + i * 1.6, 6 + i * 0.95, i * 1.6, 0.4); L(8 - (i - 1) * 1.6, 6 + (i - 1) * 0.95, (i - 1) * 1.6, 8 - i * 1.6, 6 + i * 0.95, i * 1.6, 0.4); L(-8 + (i - 1) * 1.6, 6 + (i - 1) * 0.95, 18 - (i - 1) * 1.6, -8 + i * 1.6, 6 + i * 0.95, 18 - i * 1.6, 0.4); L(8 - (i - 1) * 1.6, 6 + (i - 1) * 0.95, 18 - (i - 1) * 1.6, 8 - i * 1.6, 6 + i * 0.95, 18 - i * 1.6, 0.4); }
+      for (z = 2; z < 18; z += 2) L(-8, 0, z, 8, 0, z, 0.2);
+      for (x = -6; x < 8; x += 2) LZ(x, 0, 0, 18, 0.2, 3);
+      for (i = 0; i < 6; i++) {
+        b = BP[i]; sel = free && i === lockN && !hop;
+        BOX(b[0] - 0.42, b[0] + 0.42, 1, b[1] - 0.42, b[1] + 0.42, 0.9); RY(0.92, b[0] - 0.42, b[0] + 0.42, b[1] - 0.42, b[1] + 0.42, 0.5);
+        L(b[0] * 0.55, 8.85, 9 + (b[1] - 9) * 0.55, b[0] - 0.5, 1, b[1], 0.16); L(b[0] * 0.55, 8.85, 9 + (b[1] - 9) * 0.55, b[0] + 0.5, 1, b[1], 0.16);
+        bottle(BOT[i], b[0], 1, b[1], time * (sel ? 0.55 : 0.3) + i * 1.3, sel ? 1.25 : 0.9, sel || Math.abs(b[0] - cam.x) + Math.abs(b[1] - cam.z) < 9);
+      }
+      flush(g);
+    }
+    function enterRoom() { if (ent || hop) return; cap.style.display = 'none'; ent = { t: 0, z0: cam.z }; set('archStat', 'Entering pyramid ' + p2(curN + 1)); set('archPos', ''); }
+    function leaveRoom() {
+      var P; start(SECT['02']); P = desPose(0); blk = 1; free = true; docked = true; t = S.T + S.TURN; skip.style.display = 'none';
+      cam.x = P.x; cam.y = P.y; cam.z = P.z; cam.yaw = 0; cam.pitch = 0; arrive(0);
+    }
+
     var SECT = {
-      '01': { title: '01 / Design', place: 'Gallery hall', fly: true, moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
+      '01': { title: '01 / Design', place: 'Gallery hall', fly: true, gal: true, pose: galPose, many: 'Frames', moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
+      '02': { title: '02 / Projects', place: 'Wasteland', fly: true, pose: desPose, many: 'Pyramids', moving: 'Crossing wasteland', found: 'Pyramid located', one: 'Pyramid', empty: 'Sealed', emptyWord: 'sealed', none: 'This pyramid is still sealed.', count: 'pyramids open', hint: 'Select a pyramid to fly to it.', label: 'Projects', items: PROJECTS, T: 7.4, TURN: 0.4, dist: 255, fog: 430, arc: 66, flat: true, hopV: 62, hopMax: 5.6, riseAll: 40, dip: 0.5, eLabel: 'Enter', onE: enterRoom, cam: desCam, scene: desScene },
+      '02r': { title: '02 / Projects', place: 'Pyramid 01 — Bottles', fly: true, pose: roomPose, many: 'Bottles', moving: 'Crossing chamber', found: 'Chamber', one: 'Bottle', empty: 'Empty plinth', none: 'Nothing stands on this plinth yet.', count: 'bottles on show', hint: 'Select a bottle to walk up to it.', label: 'Bottles', items: BOTTLES, T: 2.2, TURN: 0.3, dist: 2, fog: 60, arc: 0.2, hopV: 5, hopMax: 2.6, riseAll: 6, dip: 0.05, direct: true, live: true, eLabel: 'Leave', eAlways: true, onE: leaveRoom, cam: roomCam, scene: roomScene, pos: function () { return 'Chamber'; } },
       '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 3.6, TURN: 1.1, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
       '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
     };
@@ -1023,9 +1150,10 @@ body{margin:0;background:#000}
       if (!on) return;
       raf = requestAnimationFrame(frame);
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
-      if (docked && !hop && (fr++ % 3)) return;
+      if (docked && !hop && !ent && blk <= 0 && !S.live && (fr++ % 3)) return;
       var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
-      if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
+      if (ent) { ent.t += dt; cam.z = ent.z0 + 30 * sm(ent.t / 1.5); cam.y += (2.4 - cam.y) * Math.min(1, dt * 3); blk = sm((ent.t - 0.75) / 0.6); } else if (blk > 0) blk = Math.max(0, blk - dt * 1.5);
+      if (ent) {} else if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
       sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
       lock = free ? 1 : Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
       if (!docked && t >= S.T + S.TURN) dock();
@@ -1033,8 +1161,10 @@ body{margin:0;background:#000}
       dimK += (dimT - dimK) * Math.min(1, dt * 12);
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
       S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
-      if (S.fly && viewN >= 0 && !hop) { imgA = Math.min(1, imgA + dt * 5); drawImg(1 - 0.62 * dimK); }
+      if (S.gal && viewN >= 0 && !hop) { imgA = Math.min(1, imgA + dt * 5); drawImg(1 - 0.62 * dimK); }
       if (hop && hop.t >= hop.dur) arrive(hop.n);
+      if (blk > 0) { c.fillStyle = 'rgba(0,0,0,' + blk.toFixed(3) + ')'; c.fillRect(0, 0, W, H); }
+      if (ent && ent.t >= 1.4) { start(SECT['02r']); blk = 1; }
       if (!docked) {
         set('archStat', u < 1 ? S.moving : S.found);
         set('archPos', S.pos ? S.pos() : 'Z ' + (cam.z < 0 ? '−' : '+') + Math.abs(cam.z).toFixed(1) + ' M · ' + ((30 * u * u * (1 - u) * (1 - u) * S.dist) / S.T).toFixed(1) + ' M/S');
@@ -1076,7 +1206,7 @@ body{margin:0;background:#000}
       docked = true; t = Math.max(t, S.T + S.TURN); skip.style.display = 'none';
       set('archStat', 'Docked'); set('archPos', S.place);
       if (S.term) { termOpen(); return; }
-      if (S.fly) { viewN = 0; imgA = 0; set('archPos', 'Frame E-17'); }
+      if (S.fly) { viewN = 0; imgA = 0; set('archPos', S.pose(0).tag); }
       build(); box.style.display = 'block'; box.classList.add('mm-panel');
       var b = list.querySelector('button'); if (b) b.focus();
     }
@@ -1085,14 +1215,18 @@ body{margin:0;background:#000}
       W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 2);
       cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cx = W / 2; cy = H / 2; f = 0.55 * Math.max(W, H); dockD = (f * 3) / Math.min(W - 24, 640);
     }
+    function start(sc) {
+      S = sc; FOG = S.fog || 105; docked = false; hop = null; ent = null; free = false; curN = 0; viewN = -1; lockN = 0; cap.style.display = 'none'; FSL = {};
+      if (S.gal) { for (var n0 = Math.max(6, S.items.length) - 1; n0 >= 0; n0--) { var sl0 = slot(n0); FSL[sl0.s + ':' + sl0.i] = n0; } S.items.forEach(function (it) { if (it.img && !it.im) { it.im = new Image(); it.im.src = it.img; } }); }
+      dimK = 0; t = still ? S.T + S.TURN : 0; fr = 0;
+      set('runTitle', S.title); set('runPlace', S.place); set('archStat', ''); set('archPos', ''); box.setAttribute('aria-label', S.label);
+      document.getElementById('mm-cap-l').textContent = '[ ' + (S.many || 'List') + ' ]';
+      box.style.display = 'none'; term.style.display = 'none'; bLast = 0; CL.length = 0; skip.style.display = still ? 'none' : 'block';
+    }
     function open(b) {
       var sc = SECT[b.getAttribute('data-idx')];
       if (!c || on || !sc) return;
-      S = sc; from = b; on = true; docked = false; hop = null; free = false; curN = 0; viewN = -1; lockN = 0; cap.style.display = 'none'; FSL = {};
-      if (S.fly) { for (var n0 = Math.max(6, S.items.length) - 1; n0 >= 0; n0--) { var sl0 = slot(n0); FSL[sl0.s + ':' + sl0.i] = n0; } S.items.forEach(function (it) { if (it.img && !it.im) { it.im = new Image(); it.im.src = it.img; } }); }
-      dimK = 0; t = still ? S.T + S.TURN : 0; last = 0; fr = 0;
-      set('runTitle', S.title); set('runPlace', S.place); set('archStat', ''); set('archPos', ''); box.setAttribute('aria-label', S.label);
-      box.style.display = 'none'; term.style.display = 'none'; bLast = 0; CL.length = 0; skip.style.display = still ? 'none' : 'block';
+      from = b; on = true; last = 0; blk = 0; start(sc);
       el.style.display = 'block'; el.style.animation = 'mm-fade .45s ease both';
       engine.setPaused(true); size(); raf = requestAnimationFrame(frame);
       document.getElementById('mm-arch-x').focus();
@@ -1102,7 +1236,7 @@ body{margin:0;background:#000}
       on = false; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
       if (from) from.focus();
     }
-    cv.addEventListener('pointerdown', function () { if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN; });
+    cv.addEventListener('pointerdown', function () { if (ent) return; if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN; });
     document.getElementById('mm-arch-x').addEventListener('click', close);
     window.addEventListener('resize', function () { if (on) size(); });
     return { open: open, close: close, has: function (idx) { return !!c && !!SECT[idx]; } };
