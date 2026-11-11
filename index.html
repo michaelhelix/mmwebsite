@@ -994,7 +994,7 @@ body{margin:0;background:#000}
       cam.yaw = S.direct ? la(hop.a0, hop.a1, sm(p)) : la(la(hop.a0, hop.tr, sm(p / 0.38)), hop.a1, sm((p - 0.58) / 0.42));
       cam.pitch = -(S.dip || 0.3) * hop.rise * Math.sin(Math.PI * k);
     }
-    function arrive(n) {
+    function arrive(n, stay) {
       var it = S.items[n] || null, o = document.getElementById('mm-cap-o'), e = document.getElementById('mm-cap-e');
       hop = null; curN = n; lockN = n; viewN = n; imgA = 0; skip.style.display = 'none';
       set('archStat', 'Docked'); set('archPos', S.pose(n).tag);
@@ -1003,6 +1003,7 @@ body{margin:0;background:#000}
       if (it && it.href) { o.href = it.href; o.style.display = 'inline-flex'; } else o.style.display = 'none';
       if (S.eLabel && (S.eAlways || (it && it.room))) { e.textContent = '[ ' + S.eLabel + ' ]'; e.style.display = 'inline-flex'; } else e.style.display = 'none';
       cap.style.display = 'block';
+      if (S.autoEnter && !stay && it && it.room) enterRoom(); /* choosing an open project goes straight inside */
     }
     document.getElementById('mm-cap-e').addEventListener('click', function () { if (S.onE) S.onE(); });
     function drawImg(g) {
@@ -1136,12 +1137,12 @@ body{margin:0;background:#000}
     function enterRoom() { if (ent || hop) return; cap.style.display = 'none'; ent = { t: 0, z0: cam.z }; set('archStat', 'Entering pyramid ' + p2(curN + 1)); set('archPos', ''); }
     function leaveRoom() {
       var P; start(SECT['02']); P = desPose(0); blk = 1; free = true; docked = true; t = S.T + S.TURN; skip.style.display = 'none';
-      cam.x = P.x; cam.y = P.y; cam.z = P.z; cam.yaw = 0; cam.pitch = 0; arrive(0);
+      cam.x = P.x; cam.y = P.y; cam.z = P.z; cam.yaw = 0; cam.pitch = 0; arrive(0, true);
     }
 
     var SECT = {
       '01': { title: '01 / Design', place: 'Gallery hall', fly: true, gal: true, pose: galPose, many: 'Frames', moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
-      '02': { title: '02 / Projects', place: 'Wasteland', fly: true, pose: desPose, many: 'Pyramids', moving: 'Crossing wasteland', found: 'Pyramid located', one: 'Pyramid', empty: 'Sealed', emptyWord: 'sealed', none: 'This pyramid is still sealed.', count: 'pyramids open', hint: 'Select a pyramid to fly to it.', label: 'Projects', items: PROJECTS, T: 7.4, TURN: 0.4, dist: 255, fog: 430, arc: 66, flat: true, hopV: 62, hopMax: 5.6, riseAll: 40, dip: 0.5, eLabel: 'Enter', onE: enterRoom, cam: desCam, scene: desScene },
+      '02': { title: '02 / Projects', place: 'Wasteland', fly: true, pose: desPose, many: 'Pyramids', moving: 'Crossing wasteland', found: 'Pyramid located', one: 'Pyramid', empty: 'Sealed', emptyWord: 'sealed', none: 'This pyramid is still sealed.', count: 'pyramids open', hint: 'Select a project to go inside its pyramid.', label: 'Projects', items: PROJECTS, T: 7.4, TURN: 0.4, dist: 255, fog: 430, arc: 66, flat: true, hopV: 62, hopMax: 5.6, riseAll: 40, dip: 0.5, eLabel: 'Enter', autoEnter: true, onE: enterRoom, cam: desCam, scene: desScene },
       '02r': { title: '02 / Projects', place: 'Pyramid 01 — Bottles', fly: true, pose: roomPose, many: 'Bottles', moving: 'Crossing chamber', found: 'Chamber', one: 'Bottle', empty: 'Empty plinth', none: 'Nothing stands on this plinth yet.', count: 'bottles on show', hint: 'Select a bottle to walk up to it.', label: 'Bottles', items: BOTTLES, T: 2.2, TURN: 0.3, dist: 2, fog: 60, arc: 0.2, hopV: 5, hopMax: 2.6, riseAll: 6, dip: 0.05, direct: true, live: true, eLabel: 'Leave', eAlways: true, onE: leaveRoom, cam: roomCam, scene: roomScene, pos: function () { return 'Chamber'; } },
       '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 3.6, TURN: 1.1, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
       '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
