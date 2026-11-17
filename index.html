@@ -985,14 +985,14 @@ body{margin:0;background:#000}
       box.style.display = 'none'; cap.style.display = 'none';
       if (n === curN && dist < 0.5) { arrive(n); return; }
       free = true; curN = n; lockN = n; viewN = -1; skip.style.display = 'block';
-      hop = { n: n, t: 0, dur: Math.min(S.hopMax || 3.6, 1.6 + dist / (S.hopV || 24)), x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, x1: P.x, y1: P.y, z1: P.z, a1: P.yaw, tr: Math.atan2(dx, dz), rise: S.riseAll ? Math.min(1, dist / S.riseAll) : dx * dx > 4 ? 1 : Math.min(1, Math.abs(dz) / 22) };
+      hop = { n: n, t: 0, dur: Math.min(S.hopMax || 3.6, 1.6 + dist / (S.hopV || 24)), x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, x1: P.x, y1: P.y, z1: P.z, a1: P.yaw, p1: P.pitch || 0, p0: cam.pitch, tr: Math.atan2(dx, dz), rise: S.riseAll ? Math.min(1, dist / S.riseAll) : dx * dx > 4 ? 1 : Math.min(1, Math.abs(dz) / 22) };
       set('archStat', S.moving); set('archPos', '→ ' + S.one + ' ' + p2(n + 1));
     }
     function hopCam(p) {
       var k = p * p * p * (p * (p * 6 - 15) + 10), up = S.flat ? 1 - Math.pow(2 * k - 1, 4) : Math.sin(Math.PI * k);
       cam.x = hop.x0 + (hop.x1 - hop.x0) * k; cam.z = hop.z0 + (hop.z1 - hop.z0) * k; cam.y = hop.y0 + (hop.y1 - hop.y0) * k + (S.arc || 3.1) * hop.rise * up;
       cam.yaw = S.direct ? la(hop.a0, hop.a1, sm(p)) : la(la(hop.a0, hop.tr, sm(p / 0.38)), hop.a1, sm((p - 0.58) / 0.42));
-      cam.pitch = -(S.dip || 0.3) * hop.rise * Math.sin(Math.PI * k);
+      cam.pitch = -(S.dip || 0.3) * hop.rise * Math.sin(Math.PI * k) + (hop.p1 || 0) * k * k + hop.p0 * (1 - k) * (1 - k);
     }
     function arrive(n, stay) {
       var it = S.items[n] || null, o = document.getElementById('mm-cap-o'), e = document.getElementById('mm-cap-e');
@@ -1019,16 +1019,16 @@ body{margin:0;background:#000}
     document.getElementById('mm-cap-n').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
     document.getElementById('mm-cap-l').addEventListener('click', function () { cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
 
-    /* ----- 02: a wasteland with six pyramids, one per project ----- */
-    /* A project gets a pyramid by adding a line here; room: true means the pyramid can be entered. */
+    /* ----- 02: a wasteland with six Maya step temples, one per project ----- */
+    /* A project gets a temple by adding a line here; room: true means the temple can be entered. */
     var PROJECTS = [{ name: 'Bottles', type: 'Project 01', note: 'A chamber with six bottle designs.', room: true }];
     var PYR = [[0, 150, 60], [-110, 230, 44], [95, 265, 50], [-60, 365, 70], [150, 410, 40], [20, 490, 56]], DS = { x: -70, y: 46, z: -150 };
     function dune(x, z) { return 1.1 * Math.sin(x * 0.045 + 1.3) * Math.sin(z * 0.038) + 0.5 * Math.sin(x * 0.11 + z * 0.07); }
-    function desPose(n) { var P = PYR[n % PYR.length]; return { x: P[0], y: 3.2, z: P[1] - P[2] * 0.95, yaw: 0, tag: 'Pyramid ' + p2(n + 1) }; }
+    function desPose(n) { var P = PYR[n % PYR.length]; return { x: P[0], y: 3.2, z: P[1] - P[2] * 1.5, yaw: 0, pitch: 0.2, tag: 'Temple ' + p2(n + 1) }; }
     function desCam(k) {
       var P = desPose(0);
       cam.x = DS.x + (P.x - DS.x) * k; cam.z = DS.z + (P.z - DS.z) * k; cam.y = DS.y + (P.y - DS.y) * (1 - Math.pow(1 - k, 1.6));
-      cam.pitch = -0.3 * Math.pow(1 - k, 1.4); cam.yaw = Math.atan2(PYR[0][0] - cam.x, PYR[0][1] - cam.z);
+      cam.pitch = -0.3 * Math.pow(1 - k, 1.4) + 0.2 * k * k * k; cam.yaw = Math.atan2(PYR[0][0] - cam.x, PYR[0][1] - cam.z);
     }
     function grid(step, n, al) {
       var x0 = Math.round(cam.x / step) * step, z0 = Math.round(cam.z / step) * step, i, j, x, z, d, a, R = step * n;
@@ -1046,17 +1046,7 @@ body{margin:0;background:#000}
       if (A[2] > 1) { x = cx + f * A[0] / A[2]; z = cy - f * A[1] / A[2]; q = f * 0.075; c.strokeStyle = wa(0.55 * g); c.beginPath(); c.arc(x, z, q, 0, TAU2); c.stroke(); c.beginPath(); for (i = 1; i < 6; i++) { d = q * (i / 6); a = Math.sqrt(q * q - d * d); c.moveTo(x - a, z + d); c.lineTo(x + a, z + d); } c.stroke(); }
       if (cam.y < 30) grid(8, 8, 0.5 * (1 - cam.y / 30));
       grid(32, 9, 0.4);
-      for (i = 0; i < PYR.length; i++) {
-        P = PYR[i]; b = P[2] / 2; h = P[2] * 0.64; x = P[0]; z = P[1]; k = lock > 0 && i === lockN ? 1 + 0.5 * lock * (0.75 + 0.25 * Math.sin(time * 4)) : 1;
-        RY(0, x - b, x + b, z - b, z + b, 0.8 * k);
-        L(x - b, 0, z - b, x, h, z, k); L(x + b, 0, z - b, x, h, z, k); L(x - b, 0, z + b, x, h, z, k); L(x + b, 0, z + b, x, h, z, k);
-        d = Math.sqrt((x - cam.x) * (x - cam.x) + (z - cam.z) * (z - cam.z));
-        if (d < 340) for (q = 1; q < 9; q++) RY(h * q / 9, x - b * (1 - q / 9), x + b * (1 - q / 9), z - b * (1 - q / 9), z + b * (1 - q / 9), q === 8 ? 0.7 : 0.32);
-        zs = z - b; a = 6 * b / h; /* doorway on the south face, leaning with the slope */
-        L(x - 2.4, 0, zs, x - 2, 6, zs + a, k); L(x + 2.4, 0, zs, x + 2, 6, zs + a, k); L(x - 2, 6, zs + a, x + 2, 6, zs + a, k);
-        if (PROJECTS[i] && PROJECTS[i].room) { L(x - 2.4, 0, zs, x - 1.2, 0, zs + 22, 0.6); L(x + 2.4, 0, zs, x + 1.2, 0, zs + 22, 0.6); L(x - 2, 6, zs + a, x - 1.2, 4, zs + 22, 0.6); L(x + 2, 6, zs + a, x + 1.2, 4, zs + 22, 0.6); RZ(zs + 22, x - 1.2, x + 1.2, 0, 4, 0.5); RZ(zs + 11, x - 1.8, x + 1.8, 0, 5, 0.4); }
-        else { L(x - 2.3, 0.4, zs + 0.3, x + 2, 5.7, zs + a, 0.5); L(x + 2.3, 0.4, zs + 0.3, x - 2, 5.7, zs + a, 0.5); }
-      }
+      for (i = 0; i < PYR.length; i++) temple(i, time);
       for (i = 0; i < 70; i++) { /* shards and broken columns */
         x = (hsh(i * 3.1) * 2 - 1) * 240; z = -160 + hsh(i * 7.7) * 720; if (Math.abs(x - cam.x) > 150 || Math.abs(z - cam.z) > 150) continue;
         q = 0.8 + hsh(i * 1.9) * 3.2; h = dune(x, z) - 0.2;
@@ -1067,9 +1057,37 @@ body{margin:0;background:#000}
       flush(g);
       for (i = 0; i < 60; i++) { x = cam.x + ((hsh(i * 2.3) * 160 + time * (5 + hsh(i) * 6)) % 160) - 80; z = cam.z + ((hsh(i * 4.1) * 160 + time * 2) % 160) - 60; dot(x, 0.5 + hsh(i * 9.7) * 9, z, 0.5, g); }
     }
+    /* a Maya step temple: nine sloped terraces, a stairway up the south face, a sanctuary with a roof comb on top */
+    function tdim(i) { var B = PYR[i][2], b = B / 2; return { b: b, h: B * 0.5, bt: b * 0.42, sw: b * 0.17, hh: B * 0.1, hw: b * 0.26, ch: B * 0.08 }; }
+    function temple(i, time) {
+      var P = PYR[i], x = P[0], z = P[1], D = tdim(i), n = 9, th = D.h / n, q, b0, b1, y, k = lock > 0 && i === lockN ? 1 + 0.5 * lock * (0.75 + 0.25 * Math.sin(time * 4)) : 1;
+      var d = Math.sqrt((x - cam.x) * (x - cam.x) + (z - cam.z) * (z - cam.z)), near = d < 330, zs, zt, st, hz0, hz1, dz;
+      for (q = 0; q < n; q++) {
+        b0 = D.b + (D.bt - D.b) * (q / n); b1 = D.b + (D.bt - D.b) * ((q + 1) / n) + (D.b - D.bt) / n * 0.45; y = q * th;
+        if (q === 0 || near) RY(y, x - b0, x + b0, z - b0, z + b0, (q ? 0.45 : 0.8) * k);
+        RY(y + th, x - b1, x + b1, z - b1, z + b1, 0.8 * k);
+        L(x - b0, y, z - b0, x - b1, y + th, z - b1, 0.9 * k); L(x + b0, y, z - b0, x + b1, y + th, z - b1, 0.9 * k); L(x - b0, y, z + b0, x - b1, y + th, z + b1, 0.9 * k); L(x + b0, y, z + b0, x + b1, y + th, z + b1, 0.9 * k);
+      }
+      zs = z - D.b - D.b * 0.14; zt = z - D.bt; /* stairway */
+      L(x - D.sw, 0, zs, x - D.sw, D.h, zt, k); L(x + D.sw, 0, zs, x + D.sw, D.h, zt, k); L(x - D.sw, 0, zs, x + D.sw, 0, zs, 0.8 * k);
+      L(x - D.sw * 1.25, 0, zs, x - D.sw * 1.25, D.h, zt, 0.6 * k); L(x + D.sw * 1.25, 0, zs, x + D.sw * 1.25, D.h, zt, 0.6 * k);
+      st = d < 150 ? 30 : near ? 12 : 0;
+      for (q = 1; q < st; q++) L(x - D.sw, (D.h * q) / st, zs + ((zt - zs) * q) / st, x + D.sw, (D.h * q) / st, zs + ((zt - zs) * q) / st, 0.4);
+      hz0 = z - D.hw * 0.7; hz1 = z + D.hw * 0.9; y = D.h; /* sanctuary, doorway and roof comb */
+      RZ(hz0, x - D.hw, x + D.hw, y, y + D.hh, 0.9 * k); RZ(hz1, x - D.hw, x + D.hw, y, y + D.hh, 0.7 * k);
+      L(x - D.hw, y, hz0, x - D.hw, y, hz1, 0.7 * k); L(x + D.hw, y, hz0, x + D.hw, y, hz1, 0.7 * k); L(x - D.hw, y + D.hh, hz0, x - D.hw, y + D.hh, hz1, 0.8 * k); L(x + D.hw, y + D.hh, hz0, x + D.hw, y + D.hh, hz1, 0.8 * k);
+      RZ(hz0, x - D.hw * 1.08, x + D.hw * 1.08, y + D.hh * 0.72, y + D.hh * 0.86, 0.5 * k);
+      dz = D.hw * 0.28; RZ(hz0, x - dz, x + dz, y, y + D.hh * 0.62, k);
+      if (PROJECTS[i] && PROJECTS[i].room) { RZ(hz0 + D.hw * 0.5, x - dz * 0.7, x + dz * 0.7, y, y + D.hh * 0.5, 0.5); L(x - dz, y, hz0, x - dz * 0.7, y, hz0 + D.hw * 0.5, 0.5); L(x + dz, y, hz0, x + dz * 0.7, y, hz0 + D.hw * 0.5, 0.5); L(x - dz, y + D.hh * 0.62, hz0, x - dz * 0.7, y + D.hh * 0.5, hz0 + D.hw * 0.5, 0.5); L(x + dz, y + D.hh * 0.62, hz0, x + dz * 0.7, y + D.hh * 0.5, hz0 + D.hw * 0.5, 0.5); }
+      else { L(x - dz, y, hz0, x + dz, y + D.hh * 0.62, hz0, 0.6); L(x + dz, y, hz0, x - dz, y + D.hh * 0.62, hz0, 0.6); }
+      b0 = D.hw * 0.72; y = D.h + D.hh; dz = (hz0 + hz1) / 2;
+      RZ(dz - D.hw * 0.16, x - b0, x + b0, y, y + D.ch, 0.9 * k); RZ(dz + D.hw * 0.16, x - b0 * 0.9, x + b0 * 0.9, y, y + D.ch, 0.6 * k);
+      if (near) for (q = -2; q <= 2; q++) { L(x + (q * b0) / 3, y + D.ch * 0.15, dz - D.hw * 0.16, x + (q * b0) / 3, y + D.ch * 0.85, dz - D.hw * 0.16, 0.45); }
+      if (near) { L(x - b0, y + D.ch * 0.5, dz - D.hw * 0.16, x + b0, y + D.ch * 0.5, dz - D.hw * 0.16, 0.45); }
+    }
     function RY(y, x0, x1, z0, z1, a) { L(x0, y, z0, x1, y, z0, a); L(x0, y, z1, x1, y, z1, a); L(x0, y, z0, x0, y, z1, a); L(x1, y, z0, x1, y, z1, a); }
 
-    /* ----- inside pyramid 01: a chamber with six bottles, each a rotating line sculpture ----- */
+    /* ----- inside temple 01: a chamber with six bottles, each a rotating line sculpture ----- */
     function sph(yc, R, n, a0, a1) { var o = [], i, th; for (i = 0; i <= n; i++) { th = a0 + ((a1 - a0) * i) / n; o.push([R * Math.sin(th), yc - R * Math.cos(th)]); } return o; }
     function mkB(parts) {
       parts.forEach(function (p) {
@@ -1134,16 +1152,16 @@ body{margin:0;background:#000}
       }
       flush(g);
     }
-    function enterRoom() { if (ent || hop) return; cap.style.display = 'none'; ent = { t: 0, z0: cam.z }; set('archStat', 'Entering pyramid ' + p2(curN + 1)); set('archPos', ''); }
+    function enterRoom() { if (ent || hop) return; cap.style.display = 'none'; var D = tdim(curN % PYR.length), P = PYR[curN % PYR.length]; ent = { t: 0, z0: cam.z, y0: cam.y, p0: cam.pitch, z1: P[1] - D.hw * 0.7 + 1, y1: D.h + D.hh * 0.3 }; set('archStat', 'Climbing temple ' + p2(curN + 1)); set('archPos', ''); }
     function leaveRoom() {
       var P; start(SECT['02']); P = desPose(0); blk = 1; free = true; docked = true; t = S.T + S.TURN; skip.style.display = 'none';
-      cam.x = P.x; cam.y = P.y; cam.z = P.z; cam.yaw = 0; cam.pitch = 0; arrive(0, true);
+      cam.x = P.x; cam.y = P.y; cam.z = P.z; cam.yaw = 0; cam.pitch = P.pitch; arrive(0, true);
     }
 
     var SECT = {
       '01': { title: '01 / Design', place: 'Gallery hall', fly: true, gal: true, pose: galPose, many: 'Frames', moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
-      '02': { title: '02 / Projects', place: 'Wasteland', fly: true, pose: desPose, many: 'Pyramids', moving: 'Crossing wasteland', found: 'Pyramid located', one: 'Pyramid', empty: 'Sealed', emptyWord: 'sealed', none: 'This pyramid is still sealed.', count: 'pyramids open', hint: 'Select a project to go inside its pyramid.', label: 'Projects', items: PROJECTS, T: 7.4, TURN: 0.4, dist: 255, fog: 430, arc: 66, flat: true, hopV: 62, hopMax: 5.6, riseAll: 40, dip: 0.5, eLabel: 'Enter', autoEnter: true, onE: enterRoom, cam: desCam, scene: desScene },
-      '02r': { title: '02 / Projects', place: 'Pyramid 01 — Bottles', fly: true, pose: roomPose, many: 'Bottles', moving: 'Crossing chamber', found: 'Chamber', one: 'Bottle', empty: 'Empty plinth', none: 'Nothing stands on this plinth yet.', count: 'bottles on show', hint: 'Select a bottle to walk up to it.', label: 'Bottles', items: BOTTLES, T: 2.2, TURN: 0.3, dist: 2, fog: 60, arc: 0.2, hopV: 5, hopMax: 2.6, riseAll: 6, dip: 0.05, direct: true, live: true, eLabel: 'Leave', eAlways: true, onE: leaveRoom, cam: roomCam, scene: roomScene, pos: function () { return 'Chamber'; } },
+      '02': { title: '02 / Projects', place: 'Wasteland', fly: true, pose: desPose, many: 'Temples', moving: 'Crossing wasteland', found: 'Temple located', one: 'Temple', empty: 'Sealed', emptyWord: 'sealed', none: 'This temple is still sealed.', count: 'temples open', hint: 'Select a project to climb into its temple.', label: 'Projects', items: PROJECTS, T: 7.4, TURN: 0.4, dist: 255, fog: 430, arc: 74, flat: true, hopV: 62, hopMax: 5.6, riseAll: 40, dip: 0.5, eLabel: 'Enter', autoEnter: true, onE: enterRoom, cam: desCam, scene: desScene },
+      '02r': { title: '02 / Projects', place: 'Temple 01 — Bottles', fly: true, pose: roomPose, many: 'Bottles', moving: 'Crossing chamber', found: 'Chamber', one: 'Bottle', empty: 'Empty plinth', none: 'Nothing stands on this plinth yet.', count: 'bottles on show', hint: 'Select a bottle to walk up to it.', label: 'Bottles', items: BOTTLES, T: 2.2, TURN: 0.3, dist: 2, fog: 60, arc: 0.2, hopV: 5, hopMax: 2.6, riseAll: 6, dip: 0.05, direct: true, live: true, eLabel: 'Leave', eAlways: true, onE: leaveRoom, cam: roomCam, scene: roomScene, pos: function () { return 'Chamber'; } },
       '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 3.6, TURN: 1.1, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
       '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
     };
@@ -1153,7 +1171,7 @@ body{margin:0;background:#000}
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
       if (docked && !hop && !ent && blk <= 0 && !S.live && (fr++ % 3)) return;
       var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
-      if (ent) { ent.t += dt; cam.z = ent.z0 + 30 * sm(ent.t / 1.5); cam.y += (2.4 - cam.y) * Math.min(1, dt * 3); blk = sm((ent.t - 0.75) / 0.6); } else if (blk > 0) blk = Math.max(0, blk - dt * 1.5);
+      if (ent) { ent.t += dt; var ek = sm(ent.t / 2.5); cam.z = ent.z0 + (ent.z1 - ent.z0) * ek; cam.y = ent.y0 + (ent.y1 - ent.y0) * Math.pow(ek, 1.25); cam.pitch = ent.p0 * (1 - ek); blk = sm((ent.t - 1.9) / 0.6); } else if (blk > 0) blk = Math.max(0, blk - dt * 1.5);
       if (ent) {} else if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
       sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
       lock = free ? 1 : Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
@@ -1165,7 +1183,7 @@ body{margin:0;background:#000}
       if (S.gal && viewN >= 0 && !hop) { imgA = Math.min(1, imgA + dt * 5); drawImg(1 - 0.62 * dimK); }
       if (hop && hop.t >= hop.dur) arrive(hop.n);
       if (blk > 0) { c.fillStyle = 'rgba(0,0,0,' + blk.toFixed(3) + ')'; c.fillRect(0, 0, W, H); }
-      if (ent && ent.t >= 1.4) { start(SECT['02r']); blk = 1; }
+      if (ent && ent.t >= 2.5) { start(SECT['02r']); blk = 1; }
       if (!docked) {
         set('archStat', u < 1 ? S.moving : S.found);
         set('archPos', S.pos ? S.pos() : 'Z ' + (cam.z < 0 ? '−' : '+') + Math.abs(cam.z).toFixed(1) + ' M · ' + ((30 * u * u * (1 - u) * (1 - u) * S.dist) / S.T).toFixed(1) + ' M/S');
