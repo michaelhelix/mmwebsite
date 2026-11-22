@@ -734,7 +734,8 @@ body{margin:0;background:#000}
   /* Projects: one Maya temple per line, in order (temple 01 first). Five temples stand in the wasteland; temples without a line stay sealed.
      href = the page that opens when you go inside, e.g. { name: 'My project', type: 'Game', href: 'projects/my-project/index.html', note: 'One line about it.' } */
   var PROJECTS = [
-    { name: 'Nuovo Quest', type: 'Game', href: 'projects/nuovo-quest/index.html', note: 'Playable in the browser.' }
+    { name: 'Nuovo Quest', type: 'Game', href: 'projects/nuovo-quest/index.html', note: 'Playable in the browser.' },
+    { name: 'Bottle room', type: 'Room', room: 'bottles', note: 'Six bottles.' }
   ];
   /* Where Contact messages go. endpoint = a form service address that accepts a JSON POST; mailto = an e-mail address (opens the visitor's mail program). Both empty = channel offline. */
   var CONTACT = { endpoint: '', mailto: '' };
@@ -987,6 +988,7 @@ body{margin:0;background:#000}
     }
     function goArrive() {
       var n = go.n, it = go.it; skip.style.display = 'none';
+      if (it && it.room) { roomOpen(n); return; }
       if (it && it.href) { go.fade = 1; gameOpen(n, it); return; }
       go = null; lockN = n;
       set('archStat', 'Sealed'); set('archPos', 'Temple ' + p2(n + 1));
@@ -1011,6 +1013,93 @@ body{margin:0;background:#000}
       build(); box.style.display = 'block'; var b = list.children[lockN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); }
     }
     document.getElementById('mm-game-x').addEventListener('click', gameClose);
+
+    /* ----- inside a temple: the bottle room (6 bottles on plinths under a Maya corbel vault) ----- */
+    var room = null, BS = [], BOT = [
+      { m: 14, round: 1, p: [[0, 0], [0.42, 0], [0.46, 0.08], [0.46, 0.7], [0.38, 0.82], [0.12, 0.9], [0.1, 1], [0.16, 1.02], [0.16, 1.2], [0.22, 1.22], [0.22, 1.45], [0, 1.5]] },
+      { m: 12, round: 1, p: [[0, 0], [0.24, 0], [0.28, 0.1], [0.28, 1.05], [0.18, 1.18], [0.08, 1.24], [0.08, 1.32], [0.12, 1.34], [0.12, 1.62], [0, 1.66]] },
+      { m: 12, round: 1, p: [[0, 0], [0.22, 0], [0.38, 0.1], [0.48, 0.28], [0.5, 0.45], [0.46, 0.62], [0.34, 0.78], [0.1, 0.88], [0.08, 0.98], [0.14, 1.0], [0.2, 1.1], [0.2, 1.22], [0.12, 1.32], [0, 1.36]] },
+      { m: 6, p: [[0, 0], [0.4, 0], [0.4, 0.85], [0.3, 0.95], [0.1, 1], [0.1, 1.08], [0.26, 1.1], [0.26, 1.18], [0.14, 1.5], [0, 1.54]] },
+      { m: 8, p: [[0, 0], [0.2, 0], [0.5, 0.4], [0.5, 0.55], [0.2, 0.95], [0.09, 1], [0.09, 1.08], [0.2, 1.1], [0, 1.45]] },
+      { m: 4, p: [[0, 0], [0.46, 0], [0.46, 0.3], [0.38, 0.3], [0.38, 0.55], [0.3, 0.55], [0.3, 0.78], [0.22, 0.78], [0.22, 0.95], [0.08, 0.95], [0.08, 1.05], [0.18, 1.05], [0.18, 1.3], [0, 1.38]] }
+    ];
+    function bPos(i) { var th = ((-45 + i * 18) * Math.PI) / 180; return { x: 6.2 * Math.sin(th), z: 1.5 + 6.2 * Math.cos(th), th: th }; }
+    function bottle(i, bx, by, bz, rot, a) {
+      var b = BOT[i], p = b.p, M = b.m, s = 1.15, j, k, a0, a1, r, y, rs = b.round ? 24 : M, ca, sa;
+      for (k = 0; k < M; k++) {
+        a0 = rot + (k * Math.PI * 2) / M; ca = Math.cos(a0); sa = Math.sin(a0);
+        for (j = 1; j < p.length; j++) L(bx + p[j - 1][0] * s * ca, by + p[j - 1][1] * s, bz + p[j - 1][0] * s * sa, bx + p[j][0] * s * ca, by + p[j][1] * s, bz + p[j][0] * s * sa, a * (b.round ? 0.55 : 0.95));
+      }
+      for (j = 0; j < p.length; j++) {
+        r = p[j][0] * s; y = by + p[j][1] * s; if (r < 0.01) continue;
+        for (k = 0; k < rs; k++) { a0 = rot + (k * Math.PI * 2) / rs; a1 = rot + ((k + 1) * Math.PI * 2) / rs; L(bx + r * Math.cos(a0), y, bz + r * Math.sin(a0), bx + r * Math.cos(a1), y, bz + r * Math.sin(a1), a * 0.9); }
+      }
+    }
+    function roomScene(time, g) {
+      var i, x, z, k, y, xk, xn, b, sel = room.sel, a, sc;
+      for (x = -7; x <= 7.01; x += 1.4) L(x, 0, 0, x, 0, 12, 0.16);
+      for (z = 0; z <= 12.01; z += 1.4) L(-7, 0, z, 7, 0, z, 0.16);
+      for (k = -1; k <= 1; k += 2) {
+        L(k * 7, 0, 0, k * 7, 0, 12, 0.6); L(k * 7, 0, 0, k * 7, 4.2, 0, 0.7); L(k * 7, 0, 12, k * 7, 4.2, 12, 0.7);
+        for (z = 2; z < 12; z += 2) L(k * 7, 0, z, k * 7, 4.2, z, 0.18);
+        for (i = 0; i < 6; i++) {
+          y = 4.2 + i * 0.6; xk = 7 - i; xn = 7 - (i + 1);
+          L(k * xk, y, 0, k * xk, y, 12, 0.65); L(k * xk, y, 0, k * xk, y + 0.6, 0, 0.6); L(k * xk, y, 12, k * xk, y + 0.6, 12, 0.6);
+          L(k * xk, y + 0.6, 0, k * xn, y + 0.6, 0, 0.6); L(k * xk, y + 0.6, 12, k * xn, y + 0.6, 12, 0.6); L(k * xk, y + 0.6, 0, k * xk, y + 0.6, 12, 0.5);
+        }
+      }
+      L(-1, 7.8, 0, 1, 7.8, 0, 0.6); L(-1, 7.8, 12, 1, 7.8, 12, 0.6); L(-1, 7.8, 0, -1, 7.8, 12, 0.6); L(1, 7.8, 0, 1, 7.8, 12, 0.6);
+      L(-7, 0, 12, 7, 0, 12, 0.6); L(-7, 4.2, 12, 7, 4.2, 12, 0.5); L(-7, 0, 0, -0.8, 0, 0, 0.6); L(0.8, 0, 0, 7, 0, 0, 0.6); L(-7, 4.2, 0, 7, 4.2, 0, 0.5);
+      RZ(0, -0.8, 0.8, 0, 2.1, 0.8);
+      for (k = 0; k < 4; k++) { a = 0.25 + k * 0.45; RZ(11.98, -a, a, 3.6 - a, 3.6 + a, 0.7 - k * 0.1); }
+      L(-0.25, 3.35, 11.98, 0.25, 3.85, 11.98, 0.5); L(0.25, 3.35, 11.98, -0.25, 3.85, 11.98, 0.5);
+      for (i = 0; i < 6; i++) {
+        b = bPos(i); a = sel === i ? 1.25 * (0.85 + 0.15 * Math.sin(time * 3)) : sel >= 0 ? 0.6 : 1;
+        TB(b.x - 0.45, b.x + 0.45, 0, 1, b.z - 0.45, b.z + 0.45, 0.75); TB(b.x - 0.52, b.x + 0.52, 1, 1.06, b.z - 0.52, b.z + 0.52, 0.6);
+        L(b.x, 7.4, b.z, b.x - 0.5, 1.06, b.z - 0.5, 0.1); L(b.x, 7.4, b.z, b.x + 0.5, 1.06, b.z - 0.5, 0.1); L(b.x, 7.4, b.z, b.x - 0.5, 1.06, b.z + 0.5, 0.1); L(b.x, 7.4, b.z, b.x + 0.5, 1.06, b.z + 0.5, 0.1);
+        bottle(i, b.x, 1.06, b.z, time * 0.3 + i * 1.1, a);
+      }
+      flush(g);
+      for (i = 0; i < 6; i++) {
+        b = bPos(i);
+        for (k = 0; k < 6; k++) { x = i * 13 + k; if (hsh(x + Math.floor(time * 1.5 + hsh(x) * 5)) > 0.55) dot(b.x + (hsh(x * 1.7) - 0.5) * 0.5, 1.2 + hsh(x * 2.3) * 1.2, b.z + (hsh(x * 3.1) - 0.5) * 0.5, 0.7, g); }
+        tf(b.x, 1.8, b.z, A); BS[i] = A[2] > 0.5 ? { x: cx + (f * A[0]) / A[2], y: cy - (f * A[1]) / A[2], r: Math.max(30, (f * 0.75) / A[2]) } : null;
+      }
+      for (i = 0; i < 40; i++) dot((hsh(i * 1.9) - 0.5) * 12, ((hsh(i * 2.2) * 7 + time * 0.12 * (0.5 + hsh(i))) % 7) + 0.3, 1 + hsh(i * 4.1) * 10, 0.3, g);
+    }
+    function roomCam(dt) {
+      var P, b, k = Math.min(1, dt * 2.2);
+      room.t += dt;
+      if (room.sel < 0) P = { x: 0, y: 1.8, z: 0.5, yaw: (W < H ? 0.5 : 0.12) * Math.sin(room.t * 0.22), pitch: -0.04 };
+      else { b = bPos(room.sel); P = { x: b.x - 2.5 * Math.sin(b.th), y: 2, z: b.z - 2.5 * Math.cos(b.th), yaw: b.th, pitch: -0.12 }; }
+      if (still) k = 1;
+      cam.x += (P.x - cam.x) * k; cam.y += (P.y - cam.y) * k; cam.z += (P.z - cam.z) * k; cam.yaw = la(cam.yaw, P.yaw, k); cam.pitch += (P.pitch - cam.pitch) * k;
+    }
+    function roomCap() {
+      var it = S.items[room.n] || {}, s = room.sel;
+      document.getElementById('mm-cap-t').textContent = s < 0 ? S.one + ' ' + p2(room.n + 1) + ' — ' + (it.name || '') : 'Bottle ' + p2(s + 1) + ' / 06';
+      document.getElementById('mm-cap-m').textContent = s < 0 ? 'Select a bottle.' : 'Placeholder bottle — the real one comes later.';
+      set('archStat', s < 0 ? 'Inside temple ' + p2(room.n + 1) : 'Bottle ' + p2(s + 1)); set('archPos', it.name || '');
+    }
+    function roomOpen(n) {
+      room = { n: n, t: 0, sel: -1 }; go = null; free = true;
+      cam.x = 0; cam.y = 1.6; cam.z = -1.4; cam.yaw = 0; cam.pitch = 0;
+      document.getElementById('mm-cap-l').textContent = '[ Leave ]'; document.getElementById('mm-cap-o').style.display = 'none';
+      roomCap(); cap.style.display = 'block';
+    }
+    function roomSel(i) { room.sel = i; roomCap(); }
+    function roomClose() {
+      var n = room.n; room = null; cap.style.display = 'none';
+      cam.x = OV.x; cam.y = OV.y; cam.z = OV.z; cam.yaw = 0; cam.pitch = OV.p; free = true;
+      document.getElementById('mm-cap-l').textContent = '[ Temples ]';
+      set('archStat', 'Docked'); set('archPos', S.place);
+      build(); box.style.display = 'block'; var b = list.children[n]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); }
+    }
+    function hitBottle(px, py) {
+      var i, d, b = -1, bd = 1e9;
+      for (i = 0; i < BS.length; i++) { if (!BS[i]) continue; d = Math.sqrt((px - BS[i].x) * (px - BS[i].x) + (py - BS[i].y) * (py - BS[i].y)); if (d < BS[i].r && d < bd) { bd = d; b = i; } }
+      return b;
+    }
 
     /* ----- 04: a burst of characters that settles into a terminal grid, is wiped, and leaves the prompt ----- */
     var GL = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~░▒▓█▄▀■□▪◊○╬╫╪╩╦╠═╔╗╚╝│┤┐└┴┬├─┼ΔΣΩΨλπ¤§¶†‡¿¡«»±÷×≈≠≡∞∫√∂∑∏¬µ';
@@ -1172,9 +1261,9 @@ body{margin:0;background:#000}
       w = x1 - x0; h = y1 - y0; iw = it.im.naturalWidth; ih = it.im.naturalHeight; r = Math.min(w / iw, h / ih);
       c.globalAlpha = Math.min(1, imgA * g); c.drawImage(it.im, x0 + (w - iw * r) / 2, y0 + (h - ih * r) / 2, iw * r, ih * r); c.globalAlpha = 1;
     }
-    document.getElementById('mm-cap-p').addEventListener('click', function () { if (S.proj) { enter((lockN + 4) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN - 1 + n) % n); });
-    document.getElementById('mm-cap-n').addEventListener('click', function () { if (S.proj) { enter((lockN + 1) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
-    document.getElementById('mm-cap-l').addEventListener('click', function () { cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
+    document.getElementById('mm-cap-p').addEventListener('click', function () { if (S.proj) { if (room) roomSel(room.sel < 0 ? 5 : (room.sel + 5) % 6); else enter((lockN + 4) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN - 1 + n) % n); });
+    document.getElementById('mm-cap-n').addEventListener('click', function () { if (S.proj) { if (room) roomSel((room.sel + 1) % 6); else enter((lockN + 1) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
+    document.getElementById('mm-cap-l').addEventListener('click', function () { if (room) { roomClose(); return; } cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
 
     var SECT = {
       '01': { title: '01 / Design', place: 'Gallery hall', fly: true, moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
@@ -1186,16 +1275,16 @@ body{margin:0;background:#000}
       if (!on) return;
       raf = requestAnimationFrame(frame);
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
-      if (docked && !hop && !go && (fr++ % 3)) return;
+      if (docked && !hop && !go && !room && (fr++ % 3)) return;
       var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
-      if (go) goCam(dt); else if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
+      if (room) roomCam(dt); else if (go) goCam(dt); else if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
       sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
       lock = free ? 1 : Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
       if (!docked && t >= S.T + S.TURN) dock();
       var dimT = S.proj ? 0 : docked && !hop && (!S.fly || box.style.display === 'block') ? 1 : 0;
       dimK += (dimT - dimK) * Math.min(1, dt * 12);
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
-      S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
+      if (room) roomScene(t, sm(room.t / 0.9)); else S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
       if (S.fly && viewN >= 0 && !hop) { imgA = Math.min(1, imgA + dt * 5); drawImg(1 - 0.62 * dimK); }
       if (hop && hop.t >= hop.dur) arrive(hop.n);
       if (!docked) {
@@ -1264,11 +1353,12 @@ body{margin:0;background:#000}
     function close() {
       if (gOpen) { gameClose(); return; }
       if (!on) return;
-      on = false; go = null; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
+      on = false; go = null; room = null; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
       if (from) from.focus();
     }
     cv.addEventListener('pointerdown', function (e) {
-      if (on && go) go.t = go.dur; else if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN;
+      if (on && room) { var nb = hitBottle(e.clientX, e.clientY); if (nb >= 0) roomSel(nb === room.sel ? -1 : nb); }
+      else if (on && go) go.t = go.dur; else if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN;
       else if (on && docked && S.proj) { var n = hitTemple(e.clientX, e.clientY); if (n >= 0) enter(n); }
     });
     document.getElementById('mm-arch-x').addEventListener('click', close);
