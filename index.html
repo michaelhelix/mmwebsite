@@ -159,6 +159,13 @@ body{margin:0;background:#000}
 </div>
 </div>
 </div>
+<div id="mm-game" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:7;flex-direction:column;background:#000;color:#fff;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:300;-webkit-font-smoothing:antialiased">
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;padding:env(safe-area-inset-top,0) 8px 0 14px;border-bottom:1px solid rgba(255,255,255,.2);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);white-space:nowrap">
+<span style="overflow:hidden;text-overflow:ellipsis"><span class="mm-hide-sm">02 / Projects / </span><span id="mm-game-t" style="color:#fff"></span> <span data-mm="gameStat"></span></span>
+<span style="flex:none;display:flex;gap:6px"><a class="mm-btn" id="mm-game-o" target="_blank" rel="noopener" style="min-height:30px;padding:0 10px;text-decoration:none">[ New tab ]</a><button type="button" class="mm-btn" id="mm-game-x" style="min-height:30px;padding:0 10px">[ Exit ]</button></span>
+</div>
+<iframe id="mm-game-f" title="Project" allow="fullscreen; autoplay; gamepad" style="flex:1 1 auto;display:block;width:100%;min-height:0;border:0;background:#000"></iframe>
+</div>
 <script>
 (function () {
   var mmEngine = function (canvas, stage, opts) {
@@ -724,6 +731,11 @@ body{margin:0;background:#000}
   /* To store a file, add a line here, e.g.
      { name: 'Portfolio 2026', type: 'PDF', date: '10/11/2026', size: '2.4 MB', href: 'files/portfolio-2026.pdf', note: 'One line about the file.' } */
   var ARCHIVE = [];
+  /* Projects: one Maya temple per line, in order (temple 01 first). Five temples stand in the wasteland; temples without a line stay sealed.
+     href = the page that opens when you go inside, e.g. { name: 'My project', type: 'Game', href: 'projects/my-project/index.html', note: 'One line about it.' } */
+  var PROJECTS = [
+    { name: 'Nuovo Quest', type: 'Game', href: 'projects/nuovo-quest/index.html', note: 'Playable in the browser.' }
+  ];
   /* Where Contact messages go. endpoint = a form service address that accepts a JSON POST; mailto = an e-mail address (opens the visitor's mail program). Both empty = channel offline. */
   var CONTACT = { endpoint: '', mailto: '' };
   var arch = (function () {
@@ -849,6 +861,156 @@ body{margin:0;background:#000}
       }
       flush(g);
     }
+
+    /* ----- 02: a wasteland with Maya temples; each temple is a project, selecting one flies you up its stairs and inside ----- */
+    var TPOS = [[0, 40], [-26, 64], [24, 78], [-10, 104], [36, 122]], TP = [], OV = { x: 0, y: 7.5, z: 2, p: -0.05 }, go = null, TS = [], DG = null, RU = [];
+    (function () {
+      for (var i = 0; i < TPOS.length; i++) {
+        var w = 9.2 - hsh(i + 3) * 1.8, n = 6 + (i % 2), h = 1.55, wt = w * 0.37;
+        TP.push({ x: TPOS[i][0], z: TPOS[i][1], w: w, n: n, h: h, top: n * h, wt: wt, sx: wt * 0.82, sd: wt * 0.66 });
+      }
+    })();
+    function TB(x0, x1, y0, y1, z0, z1, a) {
+      L(x0, y0, z0, x1, y0, z0, a); L(x0, y1, z0, x1, y1, z0, a); L(x0, y0, z1, x1, y0, z1, a); L(x0, y1, z1, x1, y1, z1, a);
+      L(x0, y0, z0, x0, y1, z0, a); L(x1, y0, z0, x1, y1, z0, a); L(x0, y0, z1, x0, y1, z1, a); L(x1, y0, z1, x1, y1, z1, a);
+      L(x0, y0, z0, x0, y0, z1, a); L(x1, y0, z0, x1, y0, z1, a); L(x0, y1, z0, x0, y1, z1, a); L(x1, y1, z0, x1, y1, z1, a);
+    }
+    function dune(x, z) {
+      var k = 1, i, d, tp;
+      for (i = 0; i < TP.length; i++) { tp = TP[i]; d = Math.sqrt((x - tp.x) * (x - tp.x) + (z - tp.z) * (z - tp.z)); k *= sm((d - tp.w - 4) / 16); }
+      return (0.9 * Math.sin(x * 0.061 + z * 0.023) + 0.55 * Math.sin(x * 0.17 - z * 0.09 + 1.3) + 0.35 * Math.sin(z * 0.21 + x * 0.05) + 0.4) * k;
+    }
+    function duneInit() {
+      var x, z, row, i, px, pz, ok, j, tp;
+      DG = [];
+      for (z = -76; z <= 184; z += 6) { row = []; for (x = -132; x <= 132; x += 6) row.push(dune(x, z)); DG.push(row); }
+      RU = [];
+      for (i = 0; RU.length < 34 && i < 400; i++) {
+        px = (hsh(i * 7.3) * 2 - 1) * 90; pz = -40 + hsh(i * 3.9) * 190; ok = Math.abs(px) > 5 || pz > 30;
+        for (j = 0; j < TP.length && ok; j++) { tp = TP[j]; if (Math.abs(px - tp.x) < tp.w + 6 && Math.abs(pz - tp.z) < tp.w + 6) ok = false; }
+        if (ok) RU.push({ x: px, z: pz, y: dune(px, pz), h: 0.6 + hsh(i * 1.7) * 2.6, w: 0.25 + hsh(i * 2.9) * 0.35, k: hsh(i * 5.1) });
+      }
+    }
+    function projCam(S, q, tt) {
+      cam.x = 7 * Math.sin(Math.PI * S) * (1 - S); cam.z = -70 + (OV.z + 70) * S;
+      cam.y = 28 + (OV.y - 28) * ez(Math.min(1, S * 1.15)); cam.pitch = -0.45 + (OV.p + 0.45) * S; cam.yaw = -0.12 * Math.sin(Math.PI * S);
+    }
+    function templeDraw(i, time, g0) {
+      var tp = TP[i], X = tp.x, Z = tp.z, k, wk, y, y1, d = Math.abs(Z - cam.z) + Math.abs(X - cam.x), sw = 1.45, m, j, yj, zj, zb, zt, top = tp.top, sx = tp.sx, sd = tp.sd, it = S.items[i], pulse;
+      for (k = 0; k < tp.n; k++) {
+        wk = tp.w - ((tp.w - tp.wt) * k) / (tp.n - 1); y = k * tp.h; y1 = y + tp.h * 0.92;
+        TB(X - wk, X + wk, y, y1, Z - wk, Z + wk, 0.85);
+        if (d < 120) { y = y + tp.h * 0.62; wk += 0.14; L(X - wk, y, Z - wk, X + wk, y, Z - wk, 0.45); L(X - wk, y, Z - wk, X - wk, y, Z + wk, 0.35); L(X + wk, y, Z - wk, X + wk, y, Z + wk, 0.35); }
+      }
+      zb = Z - tp.w - 1.1; zt = Z - tp.wt - 0.15;
+      L(X - sw, 0, zb, X - sw, top, zt, 1); L(X + sw, 0, zb, X + sw, top, zt, 1);
+      L(X - sw - 0.35, 0, zb + 0.3, X - sw - 0.35, top, zt, 0.6); L(X + sw + 0.35, 0, zb + 0.3, X + sw + 0.35, top, zt, 0.6);
+      m = d < 70 ? tp.n * 5 : d < 130 ? tp.n * 2 : 0;
+      for (j = 1; j < m; j++) { yj = (top * j) / m; zj = zb + ((zt - zb) * j) / m; L(X - sw, yj, zj, X + sw, yj, zj, 0.5); }
+      TB(X - sx, X + sx, top, top + 3, Z - sd, Z + sd, 0.95);
+      TB(X - sx * 1.08, X + sx * 1.08, top + 3, top + 3.5, Z - sd * 1.08, Z + sd * 1.08, 0.8);
+      TB(X - sx * 0.62, X + sx * 0.62, top + 3.5, top + 6.4, Z + 0.1, Z + 0.7, 0.75);
+      for (j = 1; j < 5; j++) { y = X - sx * 0.62 + (sx * 1.24 * j) / 5; L(y, top + 3.5, Z + 0.1, y, top + 6.4, Z + 0.1, 0.4); }
+      L(X - sx * 0.62, top + 4.95, Z + 0.1, X + sx * 0.62, top + 4.95, Z + 0.1, 0.4);
+      pulse = it ? 0.75 + 0.25 * Math.sin(time * 2.2 + i) : 0.45;
+      if (go && go.n === i) pulse = 1.4 * (0.75 + 0.25 * Math.sin(time * 5));
+      RZ(Z - sd - 0.02, X - 0.8, X + 0.8, top, top + 2.1, pulse); RZ(Z - sd - 0.02, X - 0.62, X + 0.62, top, top + 1.92, pulse * 0.5);
+      if (!it) { L(X - 0.8, top, Z - sd - 0.03, X + 0.8, top + 2.1, Z - sd - 0.03, 0.35); L(X + 0.8, top, Z - sd - 0.03, X - 0.8, top + 2.1, Z - sd - 0.03, 0.35); }
+    }
+    function projScene(time, g) {
+      if (!DG) duneInit();
+      var j, i, z, x, row, prev, r, cz, n, tp, lab, sc;
+      for (j = 0; j < DG.length; j++) {
+        z = -76 + j * 6; if (Math.abs(z - cam.z) > FOG + 8) continue; row = DG[j]; prev = row[0];
+        for (i = 1; i < row.length; i++) { x = -132 + i * 6; L(x - 6, prev, z, x, row[i], z, 0.42); prev = row[i]; }
+      }
+      for (i = 0; i < DG[0].length; i += 4) {
+        x = -132 + i * 6; prev = DG[0][i];
+        for (j = 1; j < DG.length; j++) { z = -76 + j * 6; if (Math.abs(z - cam.z) < FOG + 8) L(x, prev, z - 6, x, DG[j][i], z, 0.22); prev = DG[j][i]; }
+      }
+      for (i = 0; i < RU.length; i++) {
+        r = RU[i];
+        if (r.k < 0.6) TB(r.x - r.w, r.x + r.w, r.y, r.y + r.h, r.z - r.w * 0.7, r.z + r.w * 0.7, 0.55);
+        else { TB(r.x - r.h * 0.5, r.x + r.h * 0.5, r.y, r.y + r.w * 1.2, r.z - r.w, r.z + r.w, 0.5); }
+      }
+      for (z = Math.max(OV.z - 20, Math.floor((cam.z - 2) / 3) * 3), n = 0; n < 24 && z < TP[0].z - TP[0].w - 1; n++, z += 3) { L(-1.1, 0.02, z, -0.4, 0.02, z, 0.3); L(0.4, 0.02, z, 1.1, 0.02, z, 0.3); }
+      for (i = 0; i < TP.length; i++) templeDraw(i, time, g);
+      flush(g);
+      for (i = 0; i < TP.length; i++) {
+        tp = TP[i]; if (!S.items[i]) continue;
+        for (n = 0; n < 9; n++) { cz = i * 40 + n; if (hsh(cz + Math.floor(time * 2 + hsh(cz) * 7)) > 0.45) dot(tp.x + (hsh(cz * 1.3) - 0.5) * 1.2, tp.top + 0.25 + hsh(cz * 2.1) * 1.6, tp.z - tp.sd + 0.25, 0.9, g); }
+      }
+      for (i = 0; i < 70; i++) {
+        x = cam.x + (((hsh(i * 1.31) * 70 + time * (1.2 + hsh(i) * 1.6)) % 70) - 35); z = cam.z + 2 + hsh(i * 2.7) * 40;
+        dot(x, cam.y - 1.6 + hsh(i * 3.3) * 4 + 0.3 * Math.sin(time + i), z, 0.35, g);
+      }
+      c.font = '400 10' + GF; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; gfs = 0;
+      for (i = 0; i < TP.length; i++) {
+        tp = TP[i]; TS[i] = null;
+        tf(tp.x, tp.top * 0.5, tp.z, A); if (A[2] < 2) continue;
+        sc = f / A[2]; TS[i] = { x: cx + sc * A[0], y: cy - sc * A[1], r: Math.max(34, sc * tp.w * 1.05) };
+        tf(tp.x, tp.top + 7.4, tp.z, A); if (A[2] < 2 || (go && go.p > 0.3)) continue;
+        lab = p2(i + 1) + ' ' + (S.items[i] ? S.items[i].name : S.empty).toUpperCase();
+        c.fillStyle = wa((S.items[i] ? 0.95 : 0.5) * Math.max(0, 1 - A[2] / FOG) * g * Math.min(1, t / 2));
+        c.fillText(lab, cx + (f * A[0]) / A[2], cy - (f * A[1]) / A[2]);
+      }
+      if (go && go.fade > 0) { c.fillStyle = 'rgba(0,0,0,' + Math.min(1, go.fade).toFixed(3) + ')'; c.fillRect(0, 0, W, H); }
+    }
+    function hitTemple(px, py) {
+      var i, d, b = -1, bd = 1e9;
+      for (i = 0; i < TS.length; i++) { if (!TS[i]) continue; d = Math.sqrt((px - TS[i].x) * (px - TS[i].x) + (py - TS[i].y) * (py - TS[i].y)); if (d < TS[i].r && d < bd) { bd = d; b = i; } }
+      return b;
+    }
+    function enter(n) {
+      var tp = TP[n], it = S.items[n] || null, p1 = { x: tp.x, y: 2.4, z: tp.z - tp.w - 8 }, dx = p1.x - cam.x, dz = p1.z - cam.z, dist = Math.sqrt(dx * dx + dz * dz);
+      box.style.display = 'none'; cap.style.display = 'none'; free = true; lockN = n; skip.style.display = still ? 'none' : 'block';
+      go = { n: n, it: it, t: 0, a: still ? 0.01 : Math.min(3.4, 1.3 + dist / 28), b: it ? (still ? 0.01 : 2.6) : 0, c: it ? (still ? 0.01 : 1.2) : 0, x0: cam.x, y0: cam.y, z0: cam.z, a0: cam.yaw, p0: cam.pitch, p1: p1, tr: Math.atan2(dx, dz), rise: Math.min(1, dist / 30), p: 0, fade: 0 };
+      go.dur = go.a + go.b + go.c;
+      set('archStat', it ? 'Approaching temple' : 'Approaching sealed temple'); set('archPos', '→ Temple ' + p2(n + 1));
+    }
+    function goCam(dt) {
+      var tp = TP[go.n], u, k, up, zb = tp.z - tp.w - 1.1, zt = tp.z - tp.wt - 0.15, p1 = go.p1;
+      go.t += dt; u = go.t; go.p = Math.min(1, u / go.dur);
+      if (u < go.a) {
+        k = sm(u / go.a); k = k * k * (3 - 2 * k); up = Math.sin(Math.PI * k);
+        cam.x = go.x0 + (p1.x - go.x0) * k; cam.z = go.z0 + (p1.z - go.z0) * k; cam.y = go.y0 + (p1.y - go.y0) * k + 4 * go.rise * up;
+        cam.yaw = la(la(go.a0, go.tr, sm(u / go.a / 0.35)), 0, sm((u / go.a - 0.55) / 0.45)); cam.pitch = go.p0 + (0.2 - go.p0) * k - 0.25 * go.rise * up; go.fade = 0;
+      } else if (u < go.a + go.b) {
+        k = sm((u - go.a) / go.b);
+        cam.x = tp.x; cam.z = p1.z + (zt - p1.z) * k; cam.y = Math.max(p1.y, tp.top * Math.min(1, Math.max(0, (cam.z - zb) / (zt - zb))) + 1.8);
+        cam.yaw = 0; cam.pitch = 0.2 + 0.25 * Math.sin(Math.PI * k) - 0.2 * k; go.fade = 0;
+      } else {
+        k = sm((u - go.a - go.b) / Math.max(0.01, go.c));
+        cam.x = tp.x; cam.z = zt + (tp.z + 0.4 - zt) * k; cam.y = tp.top + 1.8 - 0.4 * k; cam.yaw = 0; cam.pitch = 0; go.fade = sm(k * 1.25);
+      }
+      if (u >= go.dur) goArrive();
+    }
+    function goArrive() {
+      var n = go.n, it = go.it; skip.style.display = 'none';
+      if (it && it.href) { go.fade = 1; gameOpen(n, it); return; }
+      go = null; lockN = n;
+      set('archStat', 'Sealed'); set('archPos', 'Temple ' + p2(n + 1));
+      document.getElementById('mm-cap-t').textContent = S.one + ' ' + p2(n + 1) + ' — ' + (it ? it.name : 'sealed');
+      document.getElementById('mm-cap-m').textContent = it ? [it.type, it.date].filter(Boolean).join(' · ') + (it.note ? ' — ' + it.note : '') : S.none;
+      document.getElementById('mm-cap-o').style.display = 'none'; cap.style.display = 'block';
+    }
+    var gm = document.getElementById('mm-game'), gf = document.getElementById('mm-game-f'), gOpen = false;
+    function gameOpen(n, it) {
+      gOpen = true; on = false; cancelAnimationFrame(raf);
+      document.getElementById('mm-game-t').textContent = p2(n + 1) + ' ' + it.name;
+      set('gameStat', '· Loading'); document.getElementById('mm-game-o').href = it.href;
+      gf.title = it.name; gf.onload = function () { if (gOpen) { set('gameStat', '· Running'); try { gf.focus(); } catch (e) {} } };
+      gf.src = it.href; gm.style.display = 'flex'; document.getElementById('mm-game-x').focus();
+    }
+    function gameClose() {
+      if (!gOpen) return;
+      gOpen = false; gm.style.display = 'none'; gf.onload = null; gf.src = 'about:blank';
+      go = null; free = true; cam.x = OV.x; cam.y = OV.y; cam.z = OV.z; cam.yaw = 0; cam.pitch = OV.p;
+      set('archStat', 'Docked'); set('archPos', S.place);
+      on = true; last = 0; raf = requestAnimationFrame(frame);
+      build(); box.style.display = 'block'; var b = list.children[lockN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); }
+    }
+    document.getElementById('mm-game-x').addEventListener('click', gameClose);
 
     /* ----- 04: a burst of characters that settles into a terminal grid, is wiped, and leaves the prompt ----- */
     var GL = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~░▒▓█▄▀■□▪◊○╬╫╪╩╦╠═╔╗╚╝│┤┐└┴┬├─┼ΔΣΩΨλπ¤§¶†‡¿¡«»±÷×≈≠≡∞∫√∂∑∏¬µ';
@@ -1010,12 +1172,13 @@ body{margin:0;background:#000}
       w = x1 - x0; h = y1 - y0; iw = it.im.naturalWidth; ih = it.im.naturalHeight; r = Math.min(w / iw, h / ih);
       c.globalAlpha = Math.min(1, imgA * g); c.drawImage(it.im, x0 + (w - iw * r) / 2, y0 + (h - ih * r) / 2, iw * r, ih * r); c.globalAlpha = 1;
     }
-    document.getElementById('mm-cap-p').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN - 1 + n) % n); });
-    document.getElementById('mm-cap-n').addEventListener('click', function () { var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
+    document.getElementById('mm-cap-p').addEventListener('click', function () { if (S.proj) { enter((lockN + 4) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN - 1 + n) % n); });
+    document.getElementById('mm-cap-n').addEventListener('click', function () { if (S.proj) { enter((lockN + 1) % 5); return; } var n = Math.max(6, S.items.length); flyTo((curN + 1) % n); });
     document.getElementById('mm-cap-l').addEventListener('click', function () { cap.style.display = 'none'; build(); box.style.display = 'block'; var b = list.children[curN]; if (b) { b.setAttribute('aria-pressed', 'true'); b.focus(); } });
 
     var SECT = {
       '01': { title: '01 / Design', place: 'Gallery hall', fly: true, moving: 'Crossing gallery', found: 'Frame located', one: 'Frame', empty: 'Empty frame', none: 'Nothing hangs in this frame yet.', count: 'frames hung', hint: 'Select a frame to fly to it.', label: 'Design frames', items: DESIGN, T: 7.6, TURN: 1.5, dist: GE - GS, cam: galCam, scene: galScene },
+      '02': { title: '02 / Projects', place: 'Wasteland', proj: true, moving: 'Crossing wasteland', found: 'Temples in sight', one: 'Temple', empty: 'Sealed temple', none: 'This temple is sealed. Nothing inside yet.', count: 'temples open', hint: 'Select a temple to go inside.', label: 'Project temples', items: PROJECTS, slots: 5, fog: 175, T: 6.2, TURN: 0.8, dist: 72, cam: projCam, scene: projScene },
       '04': { title: '04 / Contact', place: 'Channel 04', moving: 'Entering signal noise', found: 'Carrier found', term: true, T: 3.6, TURN: 1.1, cam: function () {}, scene: burstScene, pos: function () { return PN + ' glyphs · V ' + bV.toFixed(2); } },
       '03': { title: '03 / Archive', place: 'Rack A-05-06', moving: 'Traversing hall A', found: 'Rack located', one: 'Slot', empty: 'Empty slot', none: 'Nothing is stored in this slot yet.', count: 'slots in use', hint: 'Select a slot.', label: 'Archive files', items: ARCHIVE, T: 6.4, TURN: 1.4, dist: ZE - ZS, cam: hallCam, scene: hallScene }
     };
@@ -1023,13 +1186,13 @@ body{margin:0;background:#000}
       if (!on) return;
       raf = requestAnimationFrame(frame);
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
-      if (docked && !hop && (fr++ % 3)) return;
+      if (docked && !hop && !go && (fr++ % 3)) return;
       var u = Math.min(1, t / S.T), q = ez((t - S.T) / S.TURN);
-      if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
+      if (go) goCam(dt); else if (hop) { hop.t += dt; hopCam(Math.min(1, hop.t / hop.dur)); } else if (!free) S.cam(u * u * u * (u * (u * 6 - 15) + 10), q, t);
       sy = Math.sin(cam.yaw); cyw = Math.cos(cam.yaw); sp = Math.sin(cam.pitch); cp = Math.cos(cam.pitch);
       lock = free ? 1 : Math.min(1, Math.max(0, (t - (S.T - 1.6)) / 1.2));
       if (!docked && t >= S.T + S.TURN) dock();
-      var dimT = docked && !hop && (!S.fly || box.style.display === 'block') ? 1 : 0;
+      var dimT = S.proj ? 0 : docked && !hop && (!S.fly || box.style.display === 'block') ? 1 : 0;
       dimK += (dimT - dimK) * Math.min(1, dt * 12);
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
       S.scene(t, Math.min(1, t / 0.5) * (1 - 0.62 * dimK));
@@ -1058,8 +1221,8 @@ body{margin:0;background:#000}
       }
     }
     function build() {
-      list.textContent = ''; detail.textContent = S.hint; detail.style.minHeight = S.fly ? '0' : '74px';
-      var n = Math.max(6, S.items.length), i;
+      list.textContent = ''; detail.textContent = S.hint; detail.style.minHeight = S.fly || S.proj ? '0' : '74px';
+      var n = S.slots || Math.max(6, S.items.length), i;
       for (i = 0; i < n; i++) (function (i) {
         var it = S.items[i] || null, b = document.createElement('button'), a = document.createElement('span'), m = document.createElement('span'), r = document.createElement('span');
         b.type = 'button'; b.className = 'mm-file' + (it ? '' : ' mm-empty'); b.setAttribute('aria-pressed', 'false');
@@ -1067,7 +1230,7 @@ body{margin:0;background:#000}
         m.textContent = it ? it.name : S.empty; m.style.cssText = 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
         r.textContent = it ? (it.type || '') : '—'; r.style.cssText = 'flex:none;font-size:10px;color:rgba(255,255,255,.5)';
         b.appendChild(a); b.appendChild(m); b.appendChild(r);
-        b.addEventListener('click', function () { if (S.fly) flyTo(i); else pick(b, it, i + 1); });
+        b.addEventListener('click', function () { if (S.proj) enter(i); else if (S.fly) flyTo(i); else pick(b, it, i + 1); });
         list.appendChild(b);
       })(i);
       set('archCount', S.items.length + ' / ' + n + ' ' + S.count);
@@ -1083,26 +1246,31 @@ body{margin:0;background:#000}
     function size() {
       var r = cv.getBoundingClientRect(); if (r.width < 2) return;
       W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 2);
+      OV = W < H ? { x: 0, y: 13, z: -24, p: -0.13 } : { x: 0, y: 7.5, z: 2, p: -0.05 };
       cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cx = W / 2; cy = H / 2; f = 0.55 * Math.max(W, H); dockD = (f * 3) / Math.min(W - 24, 640);
     }
     function open(b) {
       var sc = SECT[b.getAttribute('data-idx')];
-      if (!c || on || !sc) return;
-      S = sc; from = b; on = true; docked = false; hop = null; free = false; curN = 0; viewN = -1; lockN = 0; cap.style.display = 'none'; FSL = {};
+      if (!c || on || gOpen || !sc) return;
+      S = sc; go = null; FOG = S.fog || 105; box.parentNode.style.alignItems = S.proj ? 'flex-end' : 'center'; document.getElementById('mm-cap-l').textContent = S.proj ? '[ Temples ]' : '[ Frames ]'; from = b; on = true; docked = false; hop = null; free = false; curN = 0; viewN = -1; lockN = 0; cap.style.display = 'none'; FSL = {};
       if (S.fly) { for (var n0 = Math.max(6, S.items.length) - 1; n0 >= 0; n0--) { var sl0 = slot(n0); FSL[sl0.s + ':' + sl0.i] = n0; } S.items.forEach(function (it) { if (it.img && !it.im) { it.im = new Image(); it.im.src = it.img; } }); }
       dimK = 0; t = still ? S.T + S.TURN : 0; last = 0; fr = 0;
       set('runTitle', S.title); set('runPlace', S.place); set('archStat', ''); set('archPos', ''); box.setAttribute('aria-label', S.label);
       box.style.display = 'none'; term.style.display = 'none'; bLast = 0; CL.length = 0; skip.style.display = still ? 'none' : 'block';
       el.style.display = 'block'; el.style.animation = 'mm-fade .45s ease both';
-      engine.setPaused(true); size(); raf = requestAnimationFrame(frame);
+      engine.setPaused(true); size(); if (S.proj) S.dist = OV.z + 70; raf = requestAnimationFrame(frame);
       document.getElementById('mm-arch-x').focus();
     }
     function close() {
+      if (gOpen) { gameClose(); return; }
       if (!on) return;
-      on = false; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
+      on = false; go = null; cancelAnimationFrame(raf); el.style.display = 'none'; engine.setPaused(false);
       if (from) from.focus();
     }
-    cv.addEventListener('pointerdown', function () { if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN; });
+    cv.addEventListener('pointerdown', function (e) {
+      if (on && go) go.t = go.dur; else if (on && hop) hop.t = hop.dur; else if (on && !docked && t > 0.3) t = S.T + S.TURN;
+      else if (on && docked && S.proj) { var n = hitTemple(e.clientX, e.clientY); if (n >= 0) enter(n); }
+    });
     document.getElementById('mm-arch-x').addEventListener('click', close);
     window.addEventListener('resize', function () { if (on) size(); });
     return { open: open, close: close, has: function (idx) { return !!c && !!SECT[idx]; } };
